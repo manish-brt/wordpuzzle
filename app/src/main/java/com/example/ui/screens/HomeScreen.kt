@@ -83,6 +83,34 @@ fun HomeScreen(
                     )
                 }
 
+                // USER NAME DISPLAYER AT TOP BAR!
+                if (userStats.playerName.isNotBlank()) {
+                    Row(
+                        modifier = Modifier
+                            .height(44.dp)
+                            .clip(RoundedCornerShape(22.dp))
+                            .background(Color.White.copy(alpha = 0.15f))
+                            .border(1.dp, Color.White.copy(alpha = 0.3f), RoundedCornerShape(22.dp))
+                            .padding(horizontal = 14.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.AccountCircle,
+                            contentDescription = "Profile",
+                            tint = Color(0xFFFF8C42),
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = userStats.playerName,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White,
+                            fontSize = 14.sp,
+                            maxLines = 1
+                        )
+                    }
+                }
+
                 // Settings IconButton
                 Box(
                     modifier = Modifier

@@ -187,14 +187,15 @@ fun GlassCircleButton(
 
 @Composable
 fun PauseDialog(
+    soundEnabled: Boolean,
+    hapticEnabled: Boolean,
+    onSoundToggle: (Boolean) -> Unit,
+    onHapticToggle: (Boolean) -> Unit,
     onResume: () -> Unit,
     onRestart: () -> Unit,
     onQuit: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var soundEffectsEnabled by remember { mutableStateOf(true) }
-    var bgMusicEnabled by remember { mutableStateOf(true) }
-
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -286,7 +287,7 @@ fun PauseDialog(
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
-                        imageVector = if (soundEffectsEnabled) Icons.Default.VolumeUp else Icons.Default.VolumeOff,
+                        imageVector = if (soundEnabled) Icons.Default.VolumeUp else Icons.Default.VolumeOff,
                         contentDescription = null,
                         tint = Color.White,
                         modifier = Modifier.size(20.dp)
@@ -300,8 +301,8 @@ fun PauseDialog(
                     )
                 }
                 Switch(
-                    checked = soundEffectsEnabled,
-                    onCheckedChange = { soundEffectsEnabled = it },
+                    checked = soundEnabled,
+                    onCheckedChange = onSoundToggle,
                     colors = SwitchDefaults.colors(
                         checkedThumbColor = Color.White,
                         checkedTrackColor = Color(0xFFFF5722),
@@ -311,7 +312,7 @@ fun PauseDialog(
                 )
             }
 
-            // MUSIC TOGGLE
+            // HAPTIC FEEDBACK TOGGLE
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -321,22 +322,22 @@ fun PauseDialog(
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
-                        imageVector = Icons.Default.MusicNote,
+                        imageVector = Icons.Default.Vibration,
                         contentDescription = null,
                         tint = Color.White,
                         modifier = Modifier.size(20.dp)
                     )
                     Spacer(modifier = Modifier.width(12.dp))
                     Text(
-                        text = "Background Music",
+                        text = "Haptic Feedback",
                         color = Color.White,
                         fontSize = 15.sp,
                         fontWeight = FontWeight.SemiBold
                     )
                 }
                 Switch(
-                    checked = bgMusicEnabled,
-                    onCheckedChange = { bgMusicEnabled = it },
+                    checked = hapticEnabled,
+                    onCheckedChange = onHapticToggle,
                     colors = SwitchDefaults.colors(
                         checkedThumbColor = Color.White,
                         checkedTrackColor = Color(0xFFFF5722),
@@ -390,7 +391,7 @@ fun GameLetterWheel(
 
     BoxWithConstraints(
         modifier = modifier
-            .size(280.dp)
+            .size(210.dp)
             .background(Color.White.copy(alpha = 0.15f), shape = CircleShape)
             .border(1.5.dp, Color.White.copy(alpha = 0.25f), CircleShape)
             .testTag("circular_letter_wheel")
@@ -398,11 +399,11 @@ fun GameLetterWheel(
         val widthPx = constraints.maxWidth.toFloat()
         val heightPx = constraints.maxHeight.toFloat()
         val center = Offset(widthPx / 2f, heightPx / 2f)
-        val radius = widthPx * 0.35f
+        val radius = widthPx * 0.32f
 
         val numLetters = letters.size
         val density = LocalDensity.current
-        val collisionRadiusPx = with(density) { 32.dp.toPx() }
+        val collisionRadiusPx = with(density) { 24.dp.toPx() }
 
         val positions = remember(letters, widthPx, heightPx) {
             (0 until numLetters).map { i ->
@@ -534,8 +535,8 @@ fun GameLetterWheel(
 
                 Box(
                     modifier = Modifier
-                        .offset(x = dpX - 28.dp, y = dpY - 28.dp)
-                        .size(56.dp)
+                        .offset(x = dpX - 23.dp, y = dpY - 23.dp)
+                        .size(46.dp)
                         .graphicsLayer(scaleX = scale, scaleY = scale)
                         .background(
                             color = if (isSelected) trackOrange else Color.White,
@@ -550,7 +551,7 @@ fun GameLetterWheel(
                 ) {
                     Text(
                         text = letters[i].toString(),
-                        fontSize = 24.sp,
+                        fontSize = 20.sp,
                         fontWeight = FontWeight.Black,
                         color = if (isSelected) Color.White else unselectedTextCharcoal
                     )
@@ -579,12 +580,46 @@ fun CrosswordGrid(
     val numRows = maxRow - minRow + 1
     val numCols = maxCol - minCol + 1
 
+    // Adaptive constraints based on grid dimension
+    val maxDim = maxOf(numRows, numCols)
+    val cellSize = when {
+        maxDim <= 4 -> 42.dp
+        maxDim == 5 -> 38.dp
+        maxDim == 6 -> 34.dp
+        maxDim == 7 -> 30.dp
+        maxDim == 8 -> 26.dp
+        else -> 22.dp
+    }
+    val cellPadding = when {
+        maxDim <= 4 -> 3.dp
+        maxDim <= 6 -> 2.dp
+        else -> 1.5.dp
+    }
+    val cornerRadiusValue = when {
+        maxDim <= 4 -> 10.dp
+        maxDim <= 6 -> 8.dp
+        else -> 5.dp
+    }
+    val bottomShadowHeight = when {
+        maxDim <= 4 -> 3.dp
+        maxDim <= 6 -> 2.dp
+        else -> 1.5.dp
+    }
+    val textFontSize = when {
+        maxDim <= 4 -> 20.sp
+        maxDim == 5 -> 18.sp
+        maxDim == 6 -> 16.sp
+        maxDim == 7 -> 14.sp
+        maxDim == 8 -> 12.sp
+        else -> 10.sp
+    }
+
     // Soft containment grid box: glassmorphic light overlay
     Column(
         modifier = modifier
             .background(Color.White.copy(alpha = 0.12f), shape = RoundedCornerShape(20.dp))
             .border(1.2.dp, Color.White.copy(alpha = 0.2f), RoundedCornerShape(20.dp))
-            .padding(12.dp),
+            .padding(10.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -621,20 +656,20 @@ fun CrosswordGrid(
                         Box(
                             modifier = if (isSolved) {
                                 Modifier
-                                    .padding(3.dp)
-                                    .size(44.dp)
+                                    .padding(cellPadding)
+                                    .size(cellSize)
                                     .graphicsLayer(scaleX = contentScale, scaleY = contentScale)
-                                    .background(Color(0xFFB02F00), RoundedCornerShape(12.dp))
-                                    .padding(bottom = 3.dp)
-                                    .background(cellBg, RoundedCornerShape(12.dp))
-                                    .border(1.dp, Color(0xFFFF8C42), RoundedCornerShape(12.dp))
+                                    .background(Color(0xFFB02F00), RoundedCornerShape(cornerRadiusValue))
+                                    .padding(bottom = bottomShadowHeight)
+                                    .background(cellBg, RoundedCornerShape(cornerRadiusValue))
+                                    .border(1.dp, Color(0xFFFF8C42), RoundedCornerShape(cornerRadiusValue))
                             } else {
                                 Modifier
-                                    .padding(3.dp)
-                                    .size(44.dp)
+                                    .padding(cellPadding)
+                                    .size(cellSize)
                                     .graphicsLayer(scaleX = contentScale, scaleY = contentScale)
-                                    .background(cellBg, RoundedCornerShape(12.dp))
-                                    .border(1.2.dp, Color.White.copy(alpha = 0.2f), RoundedCornerShape(12.dp))
+                                    .background(cellBg, RoundedCornerShape(cornerRadiusValue))
+                                    .border(1.2.dp, Color.White.copy(alpha = 0.2f), RoundedCornerShape(cornerRadiusValue))
                             }
                             .testTag("grid_cell_${globalRow}_${globalCol}"),
                             contentAlignment = Alignment.Center
@@ -643,14 +678,14 @@ fun CrosswordGrid(
                                 Text(
                                     text = letter.toString(),
                                     color = Color.White,
-                                    fontSize = 22.sp,
+                                    fontSize = textFontSize,
                                     fontWeight = FontWeight.Black
                                 )
                             }
                         }
                     } else {
-                        // Invisible grid spacing spacing
-                        Box(modifier = Modifier.padding(3.dp).size(44.dp))
+                        // Invisible grid spacing
+                        Box(modifier = Modifier.padding(cellPadding).size(cellSize))
                     }
                 }
             }
@@ -762,15 +797,16 @@ fun GameplayScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Menu burger button to pause
+                    // Back button to quit level
                     IconButton(
-                        onClick = { showPauseMenu = true },
-                        modifier = Modifier.background(Color.White.copy(alpha = 0.15f), CircleShape)
+                        onClick = onBack,
+                        modifier = Modifier
+                            .background(Color.White.copy(alpha = 0.15f), CircleShape)
                             .border(1.dp, Color.White.copy(alpha = 0.25f), CircleShape)
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Menu,
-                            contentDescription = "Pause",
+                            imageVector = Icons.Default.ArrowBack,
+                            contentDescription = "Back",
                             tint = Color.White
                         )
                     }
@@ -792,29 +828,48 @@ fun GameplayScreen(
                         )
                     }
 
-                    // Coins tracker (White with opacity, white text, monetization icon)
                     Row(
-                        modifier = Modifier
-                            .height(38.dp)
-                            .clip(RoundedCornerShape(19.dp))
-                            .background(Color.White.copy(alpha = 0.15f))
-                            .border(1.dp, Color.White.copy(alpha = 0.25f), RoundedCornerShape(19.dp))
-                            .padding(horizontal = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.MonetizationOn,
-                            contentDescription = "Coins",
-                            tint = Color(0xFFFFD700),
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = "${userStats.coins}",
-                            fontWeight = FontWeight.Black,
-                            fontSize = 14.sp,
-                            color = Color.White
-                        )
+                        // Coins tracker (White with opacity, white text, monetization icon)
+                        Row(
+                            modifier = Modifier
+                                .height(38.dp)
+                                .clip(RoundedCornerShape(19.dp))
+                                .background(Color.White.copy(alpha = 0.15f))
+                                .border(1.dp, Color.White.copy(alpha = 0.25f), RoundedCornerShape(19.dp))
+                                .padding(horizontal = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.MonetizationOn,
+                                contentDescription = "Coins",
+                                tint = Color(0xFFFFD700),
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "${userStats.coins}",
+                                fontWeight = FontWeight.Black,
+                                fontSize = 13.sp,
+                                color = Color.White
+                            )
+                        }
+
+                        // Menu burger button to pause
+                        IconButton(
+                            onClick = { showPauseMenu = true },
+                            modifier = Modifier
+                                .background(Color.White.copy(alpha = 0.15f), CircleShape)
+                                .border(1.dp, Color.White.copy(alpha = 0.25f), CircleShape)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Menu,
+                                contentDescription = "Pause",
+                                tint = Color.White
+                            )
+                        }
                     }
                 }
 
@@ -1139,6 +1194,10 @@ fun GameplayScreen(
         // Pause Menu Dialog Overlay Overlay
         if (showPauseMenu) {
             PauseDialog(
+                soundEnabled = soundEnabled,
+                hapticEnabled = hapticEnabled,
+                onSoundToggle = { viewModel.updateSoundEnabled(it) },
+                onHapticToggle = { viewModel.updateHapticEnabled(it) },
                 onResume = { showPauseMenu = false },
                 onRestart = {
                     viewModel.loadLevel(activeSpec.id)
