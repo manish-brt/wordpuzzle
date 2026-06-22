@@ -139,7 +139,7 @@ fun HomeScreen(
                 verticalArrangement = Arrangement.Center,
                 modifier = Modifier.weight(1f)
             ) {
-                // Student Profile Name Greeting Badge
+                // Profile Name Greeting Badge
                 if (userStats.playerName.isNotBlank()) {
                     Row(
                         modifier = Modifier
@@ -158,7 +158,7 @@ fun HomeScreen(
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = "STUDENT: ${userStats.playerName.uppercase()}",
+                            text = "Welcome, ${userStats.playerName.uppercase()}",
                             color = Color.White,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Black,
@@ -266,7 +266,7 @@ fun HomeScreen(
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                text = "LEVEL ${userStats.currentLevelId}",
+                                text = "Level ${userStats.currentLevelId}",
                                 color = Color.White,
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold
@@ -299,7 +299,7 @@ fun HomeScreen(
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                text = "SOCIAL",
+                                text = "Leaderboard",
                                 color = Color.White,
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold
@@ -310,75 +310,7 @@ fun HomeScreen(
             }
 
             // FOOTER: Daily Challenges
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(24.dp))
-                    .background(Color.White.copy(alpha = 0.15f))
-                    .border(1.dp, Color.White.copy(alpha = 0.25f), RoundedCornerShape(24.dp))
-                    .clickable {
-                        viewModel.navigate(GameScreen.DailyChallenge)
-                    }
-                    .padding(16.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        // Calendar Icon circle back
-                        Box(
-                            modifier = Modifier
-                                .size(48.dp)
-                                .clip(CircleShape)
-                                .background(Color(0xFFFF5722)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.CalendarMonth,
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(24.dp)
-                            )
-                        }
-
-                        Column {
-                            Text(
-                                text = "DAILY CHALLENGE",
-                                color = Color.White.copy(alpha = 0.7f),
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                text = "Solve Today's Word",
-                                color = Color.White,
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                        }
-                    }
-
-                    // Chevron action arrow
-                    Box(
-                        modifier = Modifier
-                            .size(40.dp)
-                            .border(2.dp, Color.White.copy(alpha = 0.3f), CircleShape)
-                            .clip(CircleShape),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                            contentDescription = "Go",
-                            tint = Color.White,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                }
-            }
+//            DailyChallengeCard(viewModel = viewModel)
         }
 
         if (showSettingsDialog) {
@@ -437,6 +369,83 @@ fun TactileGradientButton(
         }
     }
 }
+
+@Composable
+fun DailyChallengeCard(
+    viewModel: GameViewModel,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(24.dp))
+            .background(Color.White.copy(alpha = 0.15f))
+            .border(1.dp, Color.White.copy(alpha = 0.25f), RoundedCornerShape(24.dp))
+            .clickable {
+                viewModel.navigate(GameScreen.DailyChallenge)
+            }
+            .padding(16.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Calendar Icon circle back
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFFFF5722)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.CalendarMonth,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+
+                Column {
+                    Text(
+                        text = "DAILY CHALLENGE",
+                        color = Color.White.copy(alpha = 0.7f),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "Solve Today's Word",
+                        color = Color.White,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            }
+
+            // Chevron action arrow
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .border(2.dp, Color.White.copy(alpha = 0.3f), CircleShape)
+                    .clip(CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                    contentDescription = "Go",
+                    tint = Color.White,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+        }
+    }
+}
+
 
 @Composable
 fun SettingsDialog(

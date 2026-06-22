@@ -199,7 +199,7 @@ fun PauseDialog(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.6f)),
+            .background(Color.Black.copy(alpha = 0.9f)),
         contentAlignment = Alignment.Center
     ) {
         Column(
@@ -364,7 +364,7 @@ fun PauseDialog(
 
             // Decor / Zen Subtext
             Text(
-                text = "🪷 ZEN MODE ACTIVE",
+                text = "Happy Playing",
                 color = Color.White.copy(alpha = 0.4f),
                 fontSize = 10.sp,
                 fontWeight = FontWeight.Bold,
@@ -805,7 +805,7 @@ fun GameplayScreen(
                             .border(1.dp, Color.White.copy(alpha = 0.25f), CircleShape)
                     ) {
                         Icon(
-                            imageVector = Icons.Default.ArrowBack,
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
                             tint = Color.White
                         )

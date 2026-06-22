@@ -36,7 +36,7 @@ object SoundHapticHelper {
 
     fun playErrorSound(enabled: Boolean) {
         if (enabled) {
-            playTone(ToneGenerator.TONE_PROP_NACK, 300)
+            playTone(ToneGenerator.TONE_CDMA_SOFT_ERROR_LITE, 300)
         }
     }
 

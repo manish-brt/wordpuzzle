@@ -71,7 +71,7 @@ fun LevelSelectScreen(
                 }
 
                 Text(
-                    text = "ACADEMIC LEVELS",
+                    text = "LEVELS",
                     fontSize = 24.sp,
                     fontWeight = FontWeight.Black,
                     color = Color.White
