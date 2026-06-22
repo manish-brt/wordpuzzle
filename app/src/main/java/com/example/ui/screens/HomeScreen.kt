@@ -387,6 +387,7 @@ fun TactileGradientButton(
     cornerRadius: Dp = 36.dp,
     content: @Composable RowScope.() -> Unit
 ) {
+    val bottomBevelHeight = 5.dp
     BounceButton(
         onClick = onClick,
         modifier = modifier
@@ -394,17 +395,9 @@ fun TactileGradientButton(
         Box(
             modifier = Modifier
                 .fillMaxSize()
+                .background(shadowColor, RoundedCornerShape(cornerRadius))
+                .padding(bottom = bottomBevelHeight)
                 .background(brush, RoundedCornerShape(cornerRadius))
-                .drawBehind {
-                    val strokeWidth = 6.dp.toPx()
-                    val y = size.height - strokeWidth / 2f
-                    drawLine(
-                        color = shadowColor,
-                        start = Offset(0f, y),
-                        end = Offset(size.width, y),
-                        strokeWidth = strokeWidth
-                    )
-                }
                 .border(1.2.dp, Color.White.copy(alpha = 0.3f), RoundedCornerShape(cornerRadius)),
             contentAlignment = Alignment.Center
         ) {

@@ -97,36 +97,41 @@ fun LevelSelectScreen(
 
                     val accentColor = Color(0xFFFF5722) // Track orange color for unlocked cells
 
-                    Card(
-                        colors = CardDefaults.cardColors(
-                            containerColor = if (isUnlocked) Color.White.copy(alpha = 0.18f) else Color.White.copy(alpha = 0.05f)
-                        ),
-                        shape = RoundedCornerShape(16.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .aspectRatio(0.85f)
-                            .clickable(enabled = isUnlocked) {
-                                viewModel.loadLevel(level.id)
-                                viewModel.navigate(GameScreen.Gameplay)
-                            }
-                            .drawBehind {
-                                if (isUnlocked) {
-                                    val strokeWidth = 4.dp.toPx()
-                                    val y = size.height - strokeWidth / 2f
-                                    drawLine(
-                                        color = Color(0xFFB02F00), // Physics 3D bevel card shadow
-                                        start = Offset(0f, y),
-                                        end = Offset(size.width, y),
-                                        strokeWidth = strokeWidth
-                                    )
+                    val shadowColor = Color(0xFFB02F00)
+                    val cardBg = if (isUnlocked) Color.White.copy(alpha = 0.18f) else Color.White.copy(alpha = 0.05f)
+                    Box(
+                        modifier = if (isUnlocked) {
+                            Modifier
+                                .fillMaxWidth()
+                                .aspectRatio(0.85f)
+                                .background(shadowColor, RoundedCornerShape(16.dp))
+                                .padding(bottom = 4.dp)
+                                .background(cardBg, RoundedCornerShape(16.dp))
+                                .clickable(enabled = isUnlocked) {
+                                    viewModel.loadLevel(level.id)
+                                    viewModel.navigate(GameScreen.Gameplay)
                                 }
-                            }
-                            .border(
-                                width = if (level.id == activeLevelId) 1.8.dp else 1.dp,
-                                color = if (level.id == activeLevelId) Color(0xFFFF5722) else Color.White.copy(alpha = 0.2f),
-                                shape = RoundedCornerShape(16.dp)
-                            )
-                            .testTag("level_select_item_${level.id}")
+                                .border(
+                                    width = if (level.id == activeLevelId) 1.8.dp else 1.dp,
+                                    color = if (level.id == activeLevelId) Color(0xFFFF5722) else Color.White.copy(alpha = 0.2f),
+                                    shape = RoundedCornerShape(16.dp)
+                                )
+                        } else {
+                            Modifier
+                                .fillMaxWidth()
+                                .aspectRatio(0.85f)
+                                .background(cardBg, RoundedCornerShape(16.dp))
+                                .clickable(enabled = isUnlocked) {
+                                    viewModel.loadLevel(level.id)
+                                    viewModel.navigate(GameScreen.Gameplay)
+                                }
+                                .border(
+                                    width = if (level.id == activeLevelId) 1.8.dp else 1.dp,
+                                    color = if (level.id == activeLevelId) Color(0xFFFF5722) else Color.White.copy(alpha = 0.2f),
+                                    shape = RoundedCornerShape(16.dp)
+                                )
+                        }
+                        .testTag("level_select_item_${level.id}")
                     ) {
                         Column(
                             modifier = Modifier

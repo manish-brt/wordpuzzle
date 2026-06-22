@@ -619,33 +619,24 @@ fun CrosswordGrid(
                         }
 
                         Box(
-                            modifier = Modifier
-                                .padding(3.dp)
-                                .size(44.dp)
-                                .graphicsLayer(scaleX = contentScale, scaleY = contentScale)
-                                .background(
-                                    brush = cellBg,
-                                    shape = RoundedCornerShape(12.dp)
-                                )
-                                .drawBehind {
-                                    if (isSolved) {
-                                        // Thick bottom border 4dp for bevel shadow depth
-                                        val strokeWidth = 4.dp.toPx()
-                                        val y = size.height - strokeWidth / 2f
-                                        drawLine(
-                                            color = Color(0xFFB02F00), // Dark red orange bevel shadow
-                                            start = Offset(0f, y),
-                                            end = Offset(size.width, y),
-                                            strokeWidth = strokeWidth
-                                        )
-                                    }
-                                }
-                                .border(
-                                    width = if (isSolved) 1.dp else 1.2.dp,
-                                    color = if (isSolved) Color(0xFFFF8C42) else Color.White.copy(alpha = 0.2f),
-                                    shape = RoundedCornerShape(12.dp)
-                                )
-                                .testTag("grid_cell_${globalRow}_${globalCol}"),
+                            modifier = if (isSolved) {
+                                Modifier
+                                    .padding(3.dp)
+                                    .size(44.dp)
+                                    .graphicsLayer(scaleX = contentScale, scaleY = contentScale)
+                                    .background(Color(0xFFB02F00), RoundedCornerShape(12.dp))
+                                    .padding(bottom = 3.dp)
+                                    .background(cellBg, RoundedCornerShape(12.dp))
+                                    .border(1.dp, Color(0xFFFF8C42), RoundedCornerShape(12.dp))
+                            } else {
+                                Modifier
+                                    .padding(3.dp)
+                                    .size(44.dp)
+                                    .graphicsLayer(scaleX = contentScale, scaleY = contentScale)
+                                    .background(cellBg, RoundedCornerShape(12.dp))
+                                    .border(1.2.dp, Color.White.copy(alpha = 0.2f), RoundedCornerShape(12.dp))
+                            }
+                            .testTag("grid_cell_${globalRow}_${globalCol}"),
                             contentAlignment = Alignment.Center
                         ) {
                             if (isSolved) {
