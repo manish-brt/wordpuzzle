@@ -35,6 +35,7 @@ fun HomeScreen(
     modifier: Modifier = Modifier
 ) {
     val userStats by viewModel.userStats.collectAsState()
+    var showSettingsDialog by remember { mutableStateOf(false) }
 
     Box(modifier = modifier.fillMaxSize()) {
         // Serene Alpine Landscape Blur Background
@@ -90,7 +91,8 @@ fun HomeScreen(
                         .background(Color.White.copy(alpha = 0.15f))
                         .border(1.dp, Color.White.copy(alpha = 0.3f), CircleShape)
                         .clickable {
-                            viewModel.showToast("Settings Dialog Coming Soon!")
+                            com.example.ui.utils.SoundHapticHelper.playClickSound(userStats.soundEnabled)
+                            showSettingsDialog = true
                         },
                     contentAlignment = Alignment.Center
                 ) {
@@ -109,6 +111,34 @@ fun HomeScreen(
                 verticalArrangement = Arrangement.Center,
                 modifier = Modifier.weight(1f)
             ) {
+                // Student Profile Name Greeting Badge
+                if (userStats.playerName.isNotBlank()) {
+                    Row(
+                        modifier = Modifier
+                            .padding(bottom = 16.dp)
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(Color.White.copy(alpha = 0.12f))
+                            .border(1.dp, Color.White.copy(alpha = 0.22f), RoundedCornerShape(16.dp))
+                            .padding(horizontal = 14.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.School,
+                            contentDescription = null,
+                            tint = Color(0xFFFF8C42),
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "STUDENT: ${userStats.playerName.uppercase()}",
+                            color = Color.White,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Black,
+                            letterSpacing = 1.sp
+                        )
+                    }
+                }
+
                 // Animated Floating Title Logo Group
                 val infiniteTransition = rememberInfiniteTransition(label = "FloatAnimation")
                 val floatAnimOffset by infiniteTransition.animateFloat(
@@ -322,6 +352,29 @@ fun HomeScreen(
                 }
             }
         }
+
+        if (showSettingsDialog) {
+            SettingsDialog(
+                currentName = userStats.playerName,
+                soundEnabled = userStats.soundEnabled,
+                hapticEnabled = userStats.hapticEnabled,
+                onSave = { name, sound, haptic ->
+                    viewModel.updatePlayerName(name)
+                    viewModel.updateSoundEnabled(sound)
+                    viewModel.updateHapticEnabled(haptic)
+                    showSettingsDialog = false
+                },
+                onDismiss = { showSettingsDialog = false }
+            )
+        }
+
+        if (userStats.playerName.isBlank()) {
+            FirstTimeNameDialog(
+                onSave = { name ->
+                    viewModel.updatePlayerName(name)
+                }
+            )
+        }
     }
 }
 
@@ -360,6 +413,267 @@ fun TactileGradientButton(
                 verticalAlignment = Alignment.CenterVertically,
                 content = content
             )
+        }
+    }
+}
+
+@Composable
+fun SettingsDialog(
+    currentName: String,
+    soundEnabled: Boolean,
+    hapticEnabled: Boolean,
+    onSave: (String, Boolean, Boolean) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var nameInput by remember { mutableStateOf(currentName) }
+    var soundOn by remember { mutableStateOf(soundEnabled) }
+    var hapticOn by remember { mutableStateOf(hapticEnabled) }
+
+    androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
+        Card(
+            colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E26)),
+            shape = RoundedCornerShape(32.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+                .border(2.dp, Color(0xFFFF5722), RoundedCornerShape(32.dp))
+        ) {
+            Column(
+                modifier = Modifier
+                    .padding(24.dp)
+                    .fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Text(
+                    text = "SETTINGS",
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Black,
+                    color = Color.White
+                )
+
+                // Name Edit Section
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Text(
+                        text = "PLAYER PROFILE NAME",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White.copy(alpha = 0.6f)
+                    )
+                    OutlinedTextField(
+                        value = nameInput,
+                        onValueChange = { if (it.length <= 15) nameInput = it },
+                        modifier = Modifier.fillMaxWidth().testTag("settings_name_input"),
+                        shape = RoundedCornerShape(12.dp),
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color(0xFFFF5722),
+                            unfocusedBorderColor = Color.White.copy(alpha = 0.25f),
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White,
+                            focusedContainerColor = Color.White.copy(alpha = 0.05f),
+                            unfocusedContainerColor = Color.White.copy(alpha = 0.05f)
+                        ),
+                        placeholder = { Text("Enter name...", color = Color.White.copy(alpha = 0.3f)) }
+                    )
+                }
+
+                // Sound Effect Row
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            imageVector = if (soundOn) Icons.Default.VolumeUp else Icons.Default.VolumeOff,
+                            contentDescription = "Sound",
+                            tint = Color(0xFFFF5722),
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Text(
+                            text = "Sound Effects",
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White,
+                            fontSize = 16.sp
+                        )
+                    }
+                    Switch(
+                        checked = soundOn,
+                        onCheckedChange = { soundOn = it },
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = Color.White,
+                            checkedTrackColor = Color(0xFFFF5722),
+                            uncheckedThumbColor = Color.Gray,
+                            uncheckedTrackColor = Color.White.copy(alpha = 0.1f)
+                        )
+                    )
+                }
+
+                // Haptics Row
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Vibration,
+                            contentDescription = "Haptics",
+                            tint = Color(0xFFFF5722),
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Text(
+                            text = "Haptic Feedback",
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White,
+                            fontSize = 16.sp
+                        )
+                    }
+                    Switch(
+                        checked = hapticOn,
+                        onCheckedChange = { hapticOn = it },
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = Color.White,
+                            checkedTrackColor = Color(0xFFFF5722),
+                            uncheckedThumbColor = Color.Gray,
+                            uncheckedTrackColor = Color.White.copy(alpha = 0.1f)
+                        )
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                TactileGradientButton(
+                    onClick = {
+                        val cleaned = nameInput.trim()
+                        onSave(cleaned.ifBlank { "You" }, soundOn, hapticOn)
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp)
+                ) {
+                    Text(
+                        text = "SAVE CHANGES",
+                        color = Color.White,
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 15.sp
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun FirstTimeNameDialog(
+    onSave: (String) -> Unit
+) {
+    var nameInput by remember { mutableStateOf("") }
+    var showError by remember { mutableStateOf(false) }
+
+    androidx.compose.ui.window.Dialog(onDismissRequest = {}) {
+        Card(
+            colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E26)),
+            shape = RoundedCornerShape(32.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+                .border(3.dp, Color(0xFFFF5722), RoundedCornerShape(32.dp))
+        ) {
+            Column(
+                modifier = Modifier
+                    .padding(28.dp)
+                    .fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.WorkspacePremium,
+                    contentDescription = "Welcome",
+                    tint = Color(0xFFFFD700),
+                    modifier = Modifier.size(64.dp)
+                )
+
+                Text(
+                    text = "WELCOME SCHOLAR!",
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Black,
+                    color = Color.White,
+                    textAlign = TextAlign.Center
+                )
+
+                Text(
+                    text = "Please enter your name to personalize your learning profile and compete on the academic leaderboard!",
+                    fontSize = 13.sp,
+                    color = Color.White.copy(alpha = 0.7f),
+                    textAlign = TextAlign.Center,
+                    fontWeight = FontWeight.Medium
+                )
+
+                OutlinedTextField(
+                    value = nameInput,
+                    onValueChange = { 
+                        if (it.length <= 15) nameInput = it 
+                        if (it.isNotBlank()) showError = false
+                    },
+                    modifier = Modifier.fillMaxWidth().testTag("first_name_input"),
+                    shape = RoundedCornerShape(12.dp),
+                    singleLine = true,
+                    isError = showError,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color(0xFFFF5722),
+                        unfocusedBorderColor = Color.White.copy(alpha = 0.25f),
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        focusedContainerColor = Color.White.copy(alpha = 0.05f),
+                        unfocusedContainerColor = Color.White.copy(alpha = 0.05f),
+                        errorBorderColor = MaterialTheme.colorScheme.error
+                    ),
+                    placeholder = { Text("Your scholastic name...", color = Color.White.copy(alpha = 0.3f)) }
+                )
+
+                if (showError) {
+                    Text(
+                        text = "Name cannot be empty!",
+                        color = MaterialTheme.colorScheme.error,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                TactileGradientButton(
+                    onClick = {
+                        val cleaned = nameInput.trim()
+                        if (cleaned.isNotBlank()) {
+                            onSave(cleaned)
+                        } else {
+                            showError = true
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(54.dp)
+                ) {
+                    Text(
+                        text = "START STUDY JOURNEY",
+                        color = Color.White,
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 15.sp
+                    )
+                }
+            }
         }
     }
 }

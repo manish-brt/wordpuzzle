@@ -126,6 +126,24 @@ class GameViewModel(private val repository: GameRepository) : ViewModel() {
         return false
     }
 
+    fun updatePlayerName(name: String) {
+        viewModelScope.launch {
+            repository.updatePlayerName(name)
+        }
+    }
+
+    fun updateSoundEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            repository.updateSoundEnabled(enabled)
+        }
+    }
+
+    fun updateHapticEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            repository.updateHapticEnabled(enabled)
+        }
+    }
+
     // Load spec of standard level
     fun loadLevel(levelId: Int) {
         val level = StaticLevelSource.levels.firstOrNull { it.id == levelId } ?: StaticLevelSource.levels.first()

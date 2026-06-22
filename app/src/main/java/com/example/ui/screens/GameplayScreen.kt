@@ -379,11 +379,14 @@ fun GameLetterWheel(
     colorStyle: String,
     onSwipeUpdate: (String) -> Unit,
     onSwipeComplete: (String) -> Unit,
+    soundEnabled: Boolean = true,
+    hapticEnabled: Boolean = true,
     modifier: Modifier = Modifier
 ) {
     // Elegant Orange connected tracking color
     val trackOrange = Color(0xFFFF5722)
     val unselectedTextCharcoal = Color(0xFF271813)
+    val hapticFeedback = androidx.compose.ui.platform.LocalHapticFeedback.current
 
     BoxWithConstraints(
         modifier = modifier
@@ -439,6 +442,8 @@ fun GameLetterWheel(
                             if (hitIndex != -1) {
                                 selectedIndices.add(hitIndex)
                                 onSwipeUpdate(letters[hitIndex].toString())
+                                com.example.ui.utils.SoundHapticHelper.playConnectionSound(soundEnabled)
+                                com.example.ui.utils.SoundHapticHelper.triggerLightHaptic(hapticFeedback, hapticEnabled)
                             }
                             currentTouchPos = down.position
 
@@ -460,11 +465,15 @@ fun GameLetterWheel(
                                             selectedIndices.add(collidingIndex)
                                             val word = selectedIndices.map { letters[it] }.joinToString("")
                                             onSwipeUpdate(word)
+                                            com.example.ui.utils.SoundHapticHelper.playConnectionSound(soundEnabled)
+                                            com.example.ui.utils.SoundHapticHelper.triggerLightHaptic(hapticFeedback, hapticEnabled)
                                         } else if (selectedIndices.size >= 2 && selectedIndices[selectedIndices.size - 2] == collidingIndex) {
                                             // Handle back-swipe retraction feedback
                                             selectedIndices.removeAt(selectedIndices.size - 1)
                                             val word = selectedIndices.map { letters[it] }.joinToString("")
                                             onSwipeUpdate(word)
+                                            com.example.ui.utils.SoundHapticHelper.playConnectionSound(soundEnabled)
+                                            com.example.ui.utils.SoundHapticHelper.triggerLightHaptic(hapticFeedback, hapticEnabled)
                                         }
                                     }
                                     change.consume()
@@ -704,6 +713,38 @@ fun GameplayScreen(
         else -> Color(0xFFFB8C00)
     }
 
+    val soundEnabled = userStats.soundEnabled
+    val hapticEnabled = userStats.hapticEnabled
+    val hapticFeedback = androidx.compose.ui.platform.LocalHapticFeedback.current
+
+    LaunchedEffect(solvedWords.size) {
+        if (solvedWords.isNotEmpty()) {
+            com.example.ui.utils.SoundHapticHelper.playCorrectWordSound(soundEnabled)
+            com.example.ui.utils.SoundHapticHelper.triggerMediumHaptic(hapticFeedback, hapticEnabled)
+        }
+    }
+
+    LaunchedEffect(extraWordsFound.size) {
+        if (extraWordsFound.isNotEmpty()) {
+            com.example.ui.utils.SoundHapticHelper.playBonusWordSound(soundEnabled)
+            com.example.ui.utils.SoundHapticHelper.triggerLightHaptic(hapticFeedback, hapticEnabled)
+        }
+    }
+
+    LaunchedEffect(swipeErrorTrigger) {
+        if (swipeErrorTrigger) {
+            com.example.ui.utils.SoundHapticHelper.playErrorSound(soundEnabled)
+            com.example.ui.utils.SoundHapticHelper.triggerErrorHaptic(hapticFeedback, hapticEnabled)
+        }
+    }
+
+    LaunchedEffect(celebrationMilestone) {
+        if (celebrationMilestone != null) {
+            com.example.ui.utils.SoundHapticHelper.playCompleteSound(soundEnabled)
+            com.example.ui.utils.SoundHapticHelper.triggerMediumHaptic(hapticFeedback, hapticEnabled)
+        }
+    }
+
     Box(modifier = modifier.fillMaxSize()) {
         // Full screen procedural background
         SchoolBackground(theme = activeSpec.themeName)
@@ -901,7 +942,9 @@ fun GameplayScreen(
                             letters = wheelLetters,
                             colorStyle = colorStyle,
                             onSwipeUpdate = { viewModel.updateSwipeText(it) },
-                            onSwipeComplete = { viewModel.validateSwipe(it) }
+                            onSwipeComplete = { viewModel.validateSwipe(it) },
+                            soundEnabled = soundEnabled,
+                            hapticEnabled = hapticEnabled
                         )
 
                         // RIGHT SIDE BUTTONS: Hint & Rocket Booster with price labels

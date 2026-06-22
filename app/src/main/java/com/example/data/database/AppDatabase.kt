@@ -17,7 +17,7 @@ import kotlinx.coroutines.launch
         LeaderboardEntry::class,
         DailyChallengeState::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {

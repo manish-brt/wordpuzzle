@@ -15,6 +15,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -67,6 +69,31 @@ fun DailyChallengeScreen(
     val activeSpec = level!!
     val themeColor = Color(0xFF9C27B0) // Elegant academic purple for Daily challenge branding style
 
+    val soundEnabled = userStats.soundEnabled
+    val hapticEnabled = userStats.hapticEnabled
+    val hapticFeedback = androidx.compose.ui.platform.LocalHapticFeedback.current
+
+    LaunchedEffect(solvedWords.size) {
+        if (solvedWords.isNotEmpty()) {
+            com.example.ui.utils.SoundHapticHelper.playCorrectWordSound(soundEnabled)
+            com.example.ui.utils.SoundHapticHelper.triggerMediumHaptic(hapticFeedback, hapticEnabled)
+        }
+    }
+
+    LaunchedEffect(swipeErrorTrigger) {
+        if (swipeErrorTrigger) {
+            com.example.ui.utils.SoundHapticHelper.playErrorSound(soundEnabled)
+            com.example.ui.utils.SoundHapticHelper.triggerErrorHaptic(hapticFeedback, hapticEnabled)
+        }
+    }
+
+    LaunchedEffect(celebrationMilestone) {
+        if (celebrationMilestone != null) {
+            com.example.ui.utils.SoundHapticHelper.playCompleteSound(soundEnabled)
+            com.example.ui.utils.SoundHapticHelper.triggerMediumHaptic(hapticFeedback, hapticEnabled)
+        }
+    }
+
     Box(modifier = modifier.fillMaxSize()) {
         // Procedural school background
         SchoolBackground(theme = "Classroom")
@@ -94,27 +121,29 @@ fun DailyChallengeScreen(
                 ) {
                     IconButton(
                         onClick = onBack,
-                        modifier = Modifier.background(Color.White.copy(alpha = 0.85f), CircleShape)
+                        modifier = Modifier
+                            .background(Color.White.copy(alpha = 0.15f), CircleShape)
+                            .border(1.dp, Color.White.copy(alpha = 0.25f), CircleShape)
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
-                            tint = Color(0xFF6750A4)
+                            tint = Color.White
                         )
                     }
 
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
-                            text = "★ DAILY STUDY",
+                            text = "DAILY STUDY",
                             fontSize = 24.sp,
                             fontWeight = FontWeight.Black,
-                            color = Color(0xFF6750A4)
+                            color = Color.White
                         )
                         Text(
                             text = calendarHeader,
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFF475569),
+                            color = Color.White.copy(alpha = 0.7f),
                             letterSpacing = 1.sp
                         )
                     }
@@ -122,8 +151,8 @@ fun DailyChallengeScreen(
                     // Coins
                     Row(
                         modifier = Modifier
-                            .background(Color.White.copy(alpha = 0.9f), RoundedCornerShape(16.dp))
-                            .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(16.dp))
+                            .background(Color.White.copy(alpha = 0.15f), RoundedCornerShape(16.dp))
+                            .border(1.dp, Color.White.copy(alpha = 0.25f), RoundedCornerShape(16.dp))
                             .padding(horizontal = 12.dp, vertical = 6.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -138,7 +167,7 @@ fun DailyChallengeScreen(
                             text = "${userStats.coins}",
                             fontWeight = FontWeight.Black,
                             fontSize = 15.sp,
-                            color = Color(0xFF1E293B)
+                            color = Color.White
                         )
                     }
                 }
@@ -153,53 +182,44 @@ fun DailyChallengeScreen(
                 ) {
                     if (isCompleted) {
                         Card(
-                            colors = CardDefaults.cardColors(containerColor = Color.White),
-                            shape = RoundedCornerShape(24.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E26)),
+                            shape = RoundedCornerShape(32.dp),
                             modifier = Modifier
                                 .padding(16.dp)
                                 .fillMaxWidth()
-                                .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(24.dp))
-                                .drawBehind {
-                                    val strokeWidth = 5.dp.toPx()
-                                    val y = size.height - strokeWidth / 2f
-                                    drawLine(
-                                        color = Color(0xFFCBD5E1),
-                                        start = Offset(0f, y),
-                                        end = Offset(size.width, y),
-                                        strokeWidth = strokeWidth
-                                    )
-                                }
+                                .border(2.dp, Color(0xFFFF5722), RoundedCornerShape(32.dp))
                         ) {
-                          Column(
-                                modifier = Modifier.padding(24.dp),
+                           Column(
+                                modifier = Modifier.padding(28.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.CheckCircle,
                                     contentDescription = "Completed",
-                                    tint = Color(0xFF6750A4),
+                                    tint = Color(0xFFFF5722),
                                     modifier = Modifier.size(72.dp)
                                 )
-                                Spacer(modifier = Modifier.height(12.dp))
+                                Spacer(modifier = Modifier.height(16.dp))
                                 Text(
-                                    text = "DAILY QUIZ CLEAR!",
-                                    fontSize = 24.sp,
+                                    text = "DAILY STUDY COMPLETED!",
+                                    fontSize = 22.sp,
                                     fontWeight = FontWeight.Black,
-                                    color = Color(0xFF6750A4)
+                                    color = Color.White,
+                                    textAlign = TextAlign.Center
                                 )
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text(
-                                    text = "Outstanding scholar! You earned the +100 Coins Daily Award and climbed up the competitive leaderboard ranks.",
-                                    fontSize = 14.sp,
-                                    color = Color(0xFF475569),
+                                    text = "Outstanding scholar! You earned the +100 Coins Daily Award and completed your daily educational challenge.",
+                                    fontSize = 13.sp,
+                                    color = Color.White.copy(alpha = 0.7f),
                                     textAlign = TextAlign.Center,
                                     fontWeight = FontWeight.Medium
                                 )
-                                Spacer(modifier = Modifier.height(16.dp))
+                                Spacer(modifier = Modifier.height(20.dp))
                                 Row(
                                     modifier = Modifier
-                                        .background(Color(0xFFF1F5F9), RoundedCornerShape(12.dp))
-                                        .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(12.dp))
+                                        .background(Color.White.copy(alpha = 0.08f), RoundedCornerShape(12.dp))
+                                        .border(1.dp, Color.White.copy(alpha = 0.18f), RoundedCornerShape(12.dp))
                                         .padding(horizontal = 16.dp, vertical = 8.dp),
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.Center
@@ -207,13 +227,13 @@ fun DailyChallengeScreen(
                                     Icon(
                                         imageVector = Icons.Default.WorkspacePremium,
                                         contentDescription = null,
-                                        tint = Color(0xFF6750A4)
+                                        tint = Color(0xFFFFD700)
                                     )
                                     Spacer(modifier = Modifier.width(6.dp))
                                     Text(
                                         text = "Awarded 100🪙",
                                         fontWeight = FontWeight.Black,
-                                        color = Color(0xFF1E293B),
+                                        color = Color.White,
                                         fontSize = 15.sp
                                     )
                                 }
@@ -228,21 +248,19 @@ fun DailyChallengeScreen(
                         )
                     }
                 }
-            }
 
             if (!isCompleted) {
-                // BOTTOM PANEL (Interaction Area): bg-white rounded-t-[48px] with upper shadow elevation
-                Card(
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                    shape = RoundedCornerShape(topStart = 48.dp, topEnd = 48.dp),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 16.dp),
+                // BOTTOM PANEL (Interaction Area): Glassmorphic panel with upper shadow elevation
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .wrapContentHeight()
+                        .clip(RoundedCornerShape(topStart = 40.dp, topEnd = 40.dp))
+                        .background(Color.White.copy(alpha = 0.08f))
                         .border(
                             width = 1.5.dp,
-                            color = Color(0xFFE2E8F0),
-                            shape = RoundedCornerShape(topStart = 48.dp, topEnd = 48.dp)
+                            color = Color.White.copy(alpha = 0.18f),
+                            shape = RoundedCornerShape(topStart = 40.dp, topEnd = 40.dp)
                         )
                 ) {
                     Column(
@@ -273,12 +291,19 @@ fun DailyChallengeScreen(
                                     }
                                 )
 
-                                Surface(
-                                    tonalElevation = 6.dp,
-                                    shape = RoundedCornerShape(20.dp),
-                                    color = if (swipeErrorTrigger) Color(0xFFD32F2F) else Color(0xFF6750A4),
+                                Box(
                                     modifier = Modifier
                                         .graphicsLayer(translationX = with(LocalDensity.current) { shakeOffset.toPx() })
+                                        .clip(RoundedCornerShape(22.dp))
+                                        .background(
+                                            if (swipeErrorTrigger) {
+                                                Brush.verticalGradient(colors = listOf(Color(0xFFD32F2F), Color(0xFFC62828)))
+                                            } else {
+                                                Brush.verticalGradient(colors = listOf(Color(0xFFFF8C42), Color(0xFFFF5722)))
+                                            }
+                                        )
+                                        .border(1.2.dp, Color.White.copy(alpha = 0.3f), RoundedCornerShape(22.dp))
+                                        .padding(horizontal = 24.dp, vertical = 6.dp)
                                         .testTag("daily_swiped_feedback_bubble")
                                 ) {
                                     Text(
@@ -286,7 +311,6 @@ fun DailyChallengeScreen(
                                         color = Color.White,
                                         fontSize = 18.sp,
                                         fontWeight = FontWeight.ExtraBold,
-                                        modifier = Modifier.padding(horizontal = 24.dp, vertical = 6.dp),
                                         textAlign = TextAlign.Center,
                                         letterSpacing = 1.sp
                                     )
@@ -294,68 +318,34 @@ fun DailyChallengeScreen(
                             }
                         }
 
-                        // Interactive Letter wheel flanking
+                        // Main interactive wheel flanked by controls
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceEvenly,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            // Left action: Shuffle
-                            BounceButton(onClick = { viewModel.shuffleWheel() }) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(52.dp)
-                                        .background(Color(0xFFF2F2F7), CircleShape)
-                                        .border(1.dp, Color(0xFFCBD5E1), CircleShape),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Shuffle,
-                                        contentDescription = "Shuffle",
-                                        tint = Color(0xFF6750A4),
-                                        modifier = Modifier.size(24.dp)
-                                    )
-                                }
-                            }
+                            // Left button (Shuffle)
+                            GlassCircleButton(
+                                onClick = { viewModel.shuffleWheel() },
+                                icon = Icons.Default.Shuffle
+                            )
 
-                            // Circular swipe node wheel (Lilac theme!)
+                            // Center Wheel
                             GameLetterWheel(
                                 letters = wheelLetters,
                                 colorStyle = "Red",
                                 onSwipeUpdate = { viewModel.updateSwipeText(it) },
-                                onSwipeComplete = { viewModel.validateSwipe(it) }
+                                onSwipeComplete = { viewModel.validateSwipe(it) },
+                                soundEnabled = soundEnabled,
+                                hapticEnabled = hapticEnabled
                             )
 
-                            // Right action: Hint
-                            BounceButton(onClick = { viewModel.purchaseSingleHint() }) {
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(52.dp)
-                                            .background(Color(0xFFF2F2F7), CircleShape)
-                                            .border(1.dp, Color(0xFFCBD5E1), CircleShape),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.Lightbulb,
-                                            contentDescription = "Hint",
-                                            tint = Color(0xFF6750A4),
-                                            modifier = Modifier.size(24.dp)
-                                        )
-                                    }
-                                    Spacer(modifier = Modifier.height(2.dp))
-                                    Text(
-                                        text = "25🪙",
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.Black,
-                                        color = Color(0xFF1E293B),
-                                        modifier = Modifier
-                                            .background(Color(0xFFF1F5F9), RoundedCornerShape(8.dp))
-                                            .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(8.dp))
-                                            .padding(horizontal = 6.dp, vertical = 2.dp)
-                                    )
-                                }
-                            }
+                            // Right button (Hint)
+                            GlassCircleButton(
+                                onClick = { viewModel.purchaseSingleHint() },
+                                icon = Icons.Default.Lightbulb,
+                                badgeText = "25🪙"
+                            )
                         }
 
                         // Bottom streak counter footer
@@ -369,8 +359,8 @@ fun DailyChallengeScreen(
                             val completedCount = userStats.completedChallengesCount
                             Row(
                                 modifier = Modifier
-                                    .background(Color(0xFFFFF1F2), RoundedCornerShape(12.dp))
-                                    .border(1.dp, Color(0xFFFFE4E6), RoundedCornerShape(12.dp))
+                                    .background(Color(0xFFFFF1F2).copy(alpha = 0.15f), RoundedCornerShape(12.dp))
+                                    .border(1.dp, Color(0xFFFFE4E6).copy(alpha = 0.25f), RoundedCornerShape(12.dp))
                                     .padding(horizontal = 14.dp, vertical = 6.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
@@ -378,7 +368,7 @@ fun DailyChallengeScreen(
                                     text = "DAILY STUDY COMPLETION STREAK: $completedCount DAYS 🔥",
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Black,
-                                    color = Color(0xFFE11D48)
+                                    color = Color(0xFFFFD1D1)
                                 )
                             }
                         }
@@ -386,6 +376,7 @@ fun DailyChallengeScreen(
                 }
             }
         }
+    }
 
         // Animated general Toast notification alerts
         AnimatedVisibility(

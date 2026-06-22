@@ -41,7 +41,10 @@ data class UserStats(
     val coins: Int = 300, // Enriched starting coins so users can test hints/boosters!
     val stars: Int = 0,
     val completedChallengesCount: Int = 0,
-    val lastDailyChallengeDate: String = ""
+    val lastDailyChallengeDate: String = "",
+    val playerName: String = "",
+    val soundEnabled: Boolean = true,
+    val hapticEnabled: Boolean = true
 )
 
 // Persists current game progress for seamless state preservation across launches

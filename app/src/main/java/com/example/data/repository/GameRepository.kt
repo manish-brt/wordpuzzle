@@ -47,6 +47,21 @@ class GameRepository(private val dao: UserProgressDao) {
         dao.insertUserStats(stats.copy(coins = stats.coins + amount))
     }
 
+    suspend fun updatePlayerName(name: String) {
+        val stats = dao.getUserStatsDirect() ?: UserStats()
+        dao.insertUserStats(stats.copy(playerName = name))
+    }
+
+    suspend fun updateSoundEnabled(enabled: Boolean) {
+        val stats = dao.getUserStatsDirect() ?: UserStats()
+        dao.insertUserStats(stats.copy(soundEnabled = enabled))
+    }
+
+    suspend fun updateHapticEnabled(enabled: Boolean) {
+        val stats = dao.getUserStatsDirect() ?: UserStats()
+        dao.insertUserStats(stats.copy(hapticEnabled = enabled))
+    }
+
     suspend fun deductCoins(amount: Int): Boolean {
         val stats = dao.getUserStatsDirect() ?: UserStats()
         if (stats.coins >= amount) {
