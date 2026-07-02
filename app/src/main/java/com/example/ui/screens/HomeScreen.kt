@@ -1,22 +1,61 @@
 package com.example.ui.screens
 
-import androidx.compose.animation.core.*
+import androidx.compose.animation.core.EaseInOutSine
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.automirrored.filled.VolumeOff
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
+import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.Groups
+import androidx.compose.material.icons.filled.MonetizationOn
+import androidx.compose.material.icons.filled.School
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Vibration
+import androidx.compose.material.icons.filled.WorkspacePremium
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -26,8 +65,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.ui.components.BounceButton
+import com.example.ui.components.SchoolBackground
 import com.example.ui.viewmodel.GameScreen
 import com.example.ui.viewmodel.GameViewModel
+import java.util.Locale
 
 @Composable
 fun HomeScreen(
@@ -36,10 +78,11 @@ fun HomeScreen(
 ) {
     val userStats by viewModel.userStats.collectAsState()
     var showSettingsDialog by remember { mutableStateOf(false) }
+    var showResetConfirm by remember { mutableStateOf(false) }
 
     Box(modifier = modifier.fillMaxSize()) {
         // Serene Alpine Landscape Blur Background
-        SchoolBackground(theme = "Classroom")
+        SchoolBackground()
 
         Column(
             modifier = Modifier
@@ -76,7 +119,7 @@ fun HomeScreen(
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = String.format("%,d", userStats.coins),
+                        text = String.format(Locale.getDefault(), "%,d", userStats.coins),
                         fontWeight = FontWeight.ExtraBold,
                         color = Color.White,
                         fontSize = 15.sp
@@ -310,7 +353,7 @@ fun HomeScreen(
             }
 
             // FOOTER: Daily Challenges
-//            DailyChallengeCard(viewModel = viewModel)
+            DailyChallengeCard(viewModel = viewModel)
         }
 
         if (showSettingsDialog) {
@@ -324,11 +367,25 @@ fun HomeScreen(
                     viewModel.updateHapticEnabled(haptic)
                     showSettingsDialog = false
                 },
+                onReset = {
+                    showSettingsDialog = false
+                    showResetConfirm = true
+                },
                 onDismiss = { showSettingsDialog = false }
             )
         }
 
-        if (userStats.playerName.isBlank()) {
+        if (showResetConfirm) {
+            ResetConfirmationDialog(
+                onConfirm = {
+                    viewModel.resetGame()
+                    showResetConfirm = false
+                },
+                onDismiss = { showResetConfirm = false }
+            )
+        }
+
+        if (userStats.playerName.isBlank() && !showResetConfirm) {
             FirstTimeNameDialog(
                 onSave = { name ->
                     viewModel.updatePlayerName(name)
@@ -453,6 +510,7 @@ fun SettingsDialog(
     soundEnabled: Boolean,
     hapticEnabled: Boolean,
     onSave: (String, Boolean, Boolean) -> Unit,
+    onReset: () -> Unit,
     onDismiss: () -> Unit
 ) {
     var nameInput by remember { mutableStateOf(currentName) }
@@ -522,7 +580,7 @@ fun SettingsDialog(
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Icon(
-                            imageVector = if (soundOn) Icons.Default.VolumeUp else Icons.Default.VolumeOff,
+                            imageVector = if (soundOn) Icons.AutoMirrored.Filled.VolumeUp else Icons.AutoMirrored.Filled.VolumeOff,
                             contentDescription = "Sound",
                             tint = Color(0xFFFF5722),
                             modifier = Modifier.size(24.dp)
@@ -581,7 +639,7 @@ fun SettingsDialog(
                     )
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(4.dp))
 
                 TactileGradientButton(
                     onClick = {
@@ -597,6 +655,24 @@ fun SettingsDialog(
                         color = Color.White,
                         fontWeight = FontWeight.ExtraBold,
                         fontSize = 15.sp
+                    )
+                }
+
+                // Danger Zone / Reset Progress
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(44.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color.Red.copy(alpha = 0.1f))
+                        .clickable { onReset() },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "RESET GAME PROGRESS",
+                        color = Color.Red.copy(alpha = 0.8f),
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold
                     )
                 }
             }
@@ -702,6 +778,81 @@ fun FirstTimeNameDialog(
                         fontWeight = FontWeight.ExtraBold,
                         fontSize = 15.sp
                     )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun ResetConfirmationDialog(
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
+        Card(
+            colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E26)),
+            shape = RoundedCornerShape(28.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+                .border(2.dp, Color.Red.copy(alpha = 0.5f), RoundedCornerShape(28.dp))
+        ) {
+            Column(
+                modifier = Modifier.padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Vibration, // Using Vibration as a placeholder for warning
+                    contentDescription = null,
+                    tint = Color.Red,
+                    modifier = Modifier.size(48.dp)
+                )
+
+                Text(
+                    text = "RESET PROGRESS?",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Black,
+                    color = Color.White
+                )
+
+                Text(
+                    text = "This will permanently delete all your level progress, coins, and stars. This action cannot be undone.",
+                    fontSize = 14.sp,
+                    color = Color.White.copy(alpha = 0.7f),
+                    textAlign = TextAlign.Center
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    // Cancel button
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(50.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Color.White.copy(alpha = 0.1f))
+                            .clickable { onDismiss() },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("CANCEL", color = Color.White, fontWeight = FontWeight.Bold)
+                    }
+
+                    // Reset button
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(50.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Color.Red.copy(alpha = 0.8f))
+                            .clickable { onConfirm() },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("RESET", color = Color.White, fontWeight = FontWeight.Bold)
+                    }
                 }
             }
         }

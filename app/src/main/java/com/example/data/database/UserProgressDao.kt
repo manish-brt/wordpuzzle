@@ -41,4 +41,16 @@ interface UserProgressDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertDailyChallengeState(state: DailyChallengeState)
+
+    @Query("DELETE FROM user_stats")
+    suspend fun clearUserStats()
+
+    @Query("DELETE FROM level_gameplay_state")
+    suspend fun clearAllLevelGameplayState()
+
+    @Query("DELETE FROM daily_challenge_state")
+    suspend fun clearAllDailyChallengeState()
+
+    @Query("DELETE FROM leaderboard")
+    suspend fun clearLeaderboard()
 }

@@ -1,8 +1,6 @@
 package com.example.ui.screens
 
 import androidx.compose.animation.*
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.keyframes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -16,18 +14,14 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.data.model.LevelSpec
+import com.example.ui.components.*
+import com.example.ui.utils.SoundHapticHelper
 import com.example.ui.viewmodel.GameViewModel
 import java.text.SimpleDateFormat
 import java.util.*
@@ -50,8 +44,7 @@ fun DailyChallengeScreen(
     val celebrationMilestone by viewModel.celebrationMilestone.collectAsState()
 
     val todayStr = viewModel.getTodayDateStr()
-    
-    // Friendly student calendar naming formatting
+
     val calendarHeader = remember {
         val sdfIn = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
         val date = sdfIn.parse(todayStr) ?: Date()
@@ -67,36 +60,35 @@ fun DailyChallengeScreen(
     }
 
     val activeSpec = level!!
-    val themeColor = Color(0xFF9C27B0) // Elegant academic purple for Daily challenge branding style
+    val themeColor = Color(0xFF9C27B0)
 
     val soundEnabled = userStats.soundEnabled
     val hapticEnabled = userStats.hapticEnabled
-    val hapticFeedback = androidx.compose.ui.platform.LocalHapticFeedback.current
+    val hapticFeedback = LocalHapticFeedback.current
 
     LaunchedEffect(solvedWords.size) {
         if (solvedWords.isNotEmpty()) {
-            com.example.ui.utils.SoundHapticHelper.playCorrectWordSound(soundEnabled)
-            com.example.ui.utils.SoundHapticHelper.triggerMediumHaptic(hapticFeedback, hapticEnabled)
+            SoundHapticHelper.playCorrectWordSound(soundEnabled)
+            SoundHapticHelper.triggerMediumHaptic(hapticFeedback, hapticEnabled)
         }
     }
 
     LaunchedEffect(swipeErrorTrigger) {
         if (swipeErrorTrigger) {
-            com.example.ui.utils.SoundHapticHelper.playErrorSound(soundEnabled)
-            com.example.ui.utils.SoundHapticHelper.triggerErrorHaptic(hapticFeedback, hapticEnabled)
+            SoundHapticHelper.playErrorSound(soundEnabled)
+            SoundHapticHelper.triggerErrorHaptic(hapticFeedback, hapticEnabled)
         }
     }
 
     LaunchedEffect(celebrationMilestone) {
         if (celebrationMilestone != null) {
-            com.example.ui.utils.SoundHapticHelper.playCompleteSound(soundEnabled)
-            com.example.ui.utils.SoundHapticHelper.triggerMediumHaptic(hapticFeedback, hapticEnabled)
+            SoundHapticHelper.playCompleteSound(soundEnabled)
+            SoundHapticHelper.triggerMediumHaptic(hapticFeedback, hapticEnabled)
         }
     }
 
     Box(modifier = modifier.fillMaxSize()) {
-        // Procedural school background
-        SchoolBackground(theme = "Classroom")
+        SchoolBackground()
 
         Column(
             modifier = Modifier.fillMaxSize(),
@@ -108,16 +100,17 @@ fun DailyChallengeScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
-                    .statusBarsPadding()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                    .statusBarsPadding(),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
                 // Header stats
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 4.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     IconButton(
                         onClick = onBack,
@@ -152,7 +145,11 @@ fun DailyChallengeScreen(
                     Row(
                         modifier = Modifier
                             .background(Color.White.copy(alpha = 0.15f), RoundedCornerShape(16.dp))
-                            .border(1.dp, Color.White.copy(alpha = 0.25f), RoundedCornerShape(16.dp))
+                            .border(
+                                1.dp,
+                                Color.White.copy(alpha = 0.25f),
+                                RoundedCornerShape(16.dp)
+                            )
                             .padding(horizontal = 12.dp, vertical = 6.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -189,7 +186,7 @@ fun DailyChallengeScreen(
                                 .fillMaxWidth()
                                 .border(2.dp, Color(0xFFFF5722), RoundedCornerShape(32.dp))
                         ) {
-                           Column(
+                            Column(
                                 modifier = Modifier.padding(28.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
@@ -218,8 +215,15 @@ fun DailyChallengeScreen(
                                 Spacer(modifier = Modifier.height(20.dp))
                                 Row(
                                     modifier = Modifier
-                                        .background(Color.White.copy(alpha = 0.08f), RoundedCornerShape(12.dp))
-                                        .border(1.dp, Color.White.copy(alpha = 0.18f), RoundedCornerShape(12.dp))
+                                        .background(
+                                            Color.White.copy(alpha = 0.08f),
+                                            RoundedCornerShape(12.dp)
+                                        )
+                                        .border(
+                                            1.dp,
+                                            Color.White.copy(alpha = 0.18f),
+                                            RoundedCornerShape(12.dp)
+                                        )
                                         .padding(horizontal = 16.dp, vertical = 8.dp),
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.Center
@@ -244,139 +248,98 @@ fun DailyChallengeScreen(
                             level = activeSpec,
                             solvedWords = solvedWords,
                             revealedCoords = revealedCoords,
-                            colorStyle = "Red"
+                            colorStyle = activeSpec.colorStyle
                         )
                     }
                 }
 
-            if (!isCompleted) {
-                // BOTTOM PANEL (Interaction Area): Glassmorphic panel with upper shadow elevation
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .wrapContentHeight()
-                        .clip(RoundedCornerShape(topStart = 40.dp, topEnd = 40.dp))
-                        .background(Color.White.copy(alpha = 0.08f))
-                        .border(
-                            width = 1.5.dp,
-                            color = Color.White.copy(alpha = 0.18f),
-                            shape = RoundedCornerShape(topStart = 40.dp, topEnd = 40.dp)
-                        )
-                ) {
-                    Column(
+                if (!isCompleted) {
+                    Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .navigationBarsPadding()
-                            .padding(top = 16.dp, bottom = 12.dp, start = 16.dp, end = 16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                            .wrapContentHeight()
+                            .clip(RoundedCornerShape(topStart = 40.dp, topEnd = 40.dp))
+                            .background(Color.White.copy(alpha = 0.08f))
+                            .border(
+                                width = 1.5.dp,
+                                color = Color.White.copy(alpha = 0.18f),
+                                shape = RoundedCornerShape(topStart = 40.dp, topEnd = 40.dp)
+                            )
                     ) {
-                        // Swiped feedback bubble
-                        Box(
+                        Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(44.dp),
-                            contentAlignment = Alignment.Center
+                                .navigationBarsPadding()
+                                .padding(top = 0.dp, bottom = 12.dp, start = 8.dp, end = 8.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            if (currentSwipeText.isNotEmpty()) {
-                                val shakeOffset by animateDpAsState(
-                                    targetValue = if (swipeErrorTrigger) 10.dp else 0.dp,
-                                    animationSpec = keyframes {
-                                        durationMillis = 300
-                                        0.dp at 0
-                                        (-8).dp at 75
-                                        8.dp at 150
-                                        (-4).dp at 225
-                                        0.dp at 300
-                                    }
-                                )
-
-                                Box(
-                                    modifier = Modifier
-                                        .graphicsLayer(translationX = with(LocalDensity.current) { shakeOffset.toPx() })
-                                        .clip(RoundedCornerShape(22.dp))
-                                        .background(
-                                            if (swipeErrorTrigger) {
-                                                Brush.verticalGradient(colors = listOf(Color(0xFFD32F2F), Color(0xFFC62828)))
-                                            } else {
-                                                Brush.verticalGradient(colors = listOf(Color(0xFFFF8C42), Color(0xFFFF5722)))
-                                            }
-                                        )
-                                        .border(1.2.dp, Color.White.copy(alpha = 0.3f), RoundedCornerShape(22.dp))
-                                        .padding(horizontal = 24.dp, vertical = 6.dp)
-                                        .testTag("daily_swiped_feedback_bubble")
-                                ) {
-                                    Text(
-                                        text = currentSwipeText,
-                                        color = Color.White,
-                                        fontSize = 18.sp,
-                                        fontWeight = FontWeight.ExtraBold,
-                                        textAlign = TextAlign.Center,
-                                        letterSpacing = 1.sp
-                                    )
-                                }
-                            }
-                        }
-
-                        // Main interactive wheel flanked by controls
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceEvenly,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            // Left button (Shuffle)
-                            GlassCircleButton(
-                                onClick = { viewModel.shuffleWheel() },
-                                icon = Icons.Default.Shuffle
+                            SwipeFeedbackSection(
+                                currentSwipeText = currentSwipeText,
+                                swipeErrorTrigger = swipeErrorTrigger
                             )
 
-                            // Center Wheel
-                            GameLetterWheel(
-                                letters = wheelLetters,
-                                colorStyle = "Red",
-                                onSwipeUpdate = { viewModel.updateSwipeText(it) },
-                                onSwipeComplete = { viewModel.validateSwipe(it) },
-                                soundEnabled = soundEnabled,
-                                hapticEnabled = hapticEnabled
-                            )
-
-                            // Right button (Hint)
-                            GlassCircleButton(
-                                onClick = { viewModel.purchaseSingleHint() },
-                                icon = Icons.Default.Lightbulb,
-                                badgeText = "25🪙"
-                            )
-                        }
-
-                        // Bottom streak counter footer
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(start = 8.dp, end = 8.dp, top = 4.dp),
-                            horizontalArrangement = Arrangement.Center,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            val completedCount = userStats.completedChallengesCount
                             Row(
-                                modifier = Modifier
-                                    .background(Color(0xFFFFF1F2).copy(alpha = 0.15f), RoundedCornerShape(12.dp))
-                                    .border(1.dp, Color(0xFFFFE4E6).copy(alpha = 0.25f), RoundedCornerShape(12.dp))
-                                    .padding(horizontal = 14.dp, vertical = 6.dp),
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceEvenly,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text(
-                                    text = "DAILY STUDY COMPLETION STREAK: $completedCount DAYS 🔥",
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Black,
-                                    color = Color(0xFFFFD1D1)
+                                GlassCircleButton(
+                                    onClick = { viewModel.shuffleWheel() },
+                                    icon = Icons.Default.Shuffle
                                 )
+
+                                GameLetterWheel(
+                                    letters = wheelLetters,
+                                    colorStyle = activeSpec.colorStyle,
+                                    onSwipeUpdate = { viewModel.updateSwipeText(it) },
+                                    onSwipeComplete = { viewModel.validateSwipe(it) },
+                                    soundEnabled = soundEnabled,
+                                    hapticEnabled = hapticEnabled
+                                )
+
+                                GlassCircleButton(
+                                    onClick = { viewModel.purchaseSingleHint() },
+                                    icon = Icons.Default.Lightbulb,
+                                    badgeText = "25🪙"
+                                )
+                            }
+
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(start = 8.dp, end = 8.dp, top = 4.dp),
+                                horizontalArrangement = Arrangement.Center,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                val completedCount = userStats.completedChallengesCount
+                                Row(
+                                    modifier = Modifier
+                                        .background(
+                                            Color(0xFFFFF1F2).copy(alpha = 0.15f),
+                                            RoundedCornerShape(12.dp)
+                                        )
+                                        .border(
+                                            1.dp,
+                                            Color(0xFFFFE4E6).copy(alpha = 0.25f),
+                                            RoundedCornerShape(12.dp)
+                                        )
+                                        .padding(horizontal = 14.dp, vertical = 6.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "DAILY STUDY COMPLETION STREAK: $completedCount DAYS 🔥",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Black,
+                                        color = Color(0xFFFFD1D1)
+                                    )
+                                }
                             }
                         }
                     }
                 }
             }
         }
-    }
 
         // Animated general Toast notification alerts
         AnimatedVisibility(
@@ -464,9 +427,17 @@ fun DailyChallengeScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Default.MonetizationOn, contentDescription = null, tint = Color(0xFFFFB300))
+                                Icon(
+                                    Icons.Default.MonetizationOn,
+                                    contentDescription = null,
+                                    tint = Color(0xFFFFB300)
+                                )
                                 Spacer(modifier = Modifier.width(4.dp))
-                                Text("+100 Coins", fontWeight = FontWeight.Bold, color = Color.Black)
+                                Text(
+                                    "+100 Coins",
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.Black
+                                )
                             }
                         }
                         Spacer(modifier = Modifier.height(24.dp))
@@ -481,22 +452,4 @@ fun DailyChallengeScreen(
             }
         }
     }
-}
-
-// Inline Row implementation helper
-@Composable
-private fun Row(
-    modifier: Modifier = Modifier,
-    horizontalArrangement: Arrangement.Horizontal = Arrangement.Start,
-    verticalAlignment: Alignment.Vertical = Alignment.Top,
-    valignment: Alignment.Vertical,
-    halignment: Arrangement.Horizontal,
-    content: @Composable RowScope.() -> Unit
-) {
-    androidx.compose.foundation.layout.Row(
-        modifier = modifier,
-        horizontalArrangement = halignment,
-        verticalAlignment = valignment,
-        content = content
-    )
 }

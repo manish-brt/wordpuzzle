@@ -4,10 +4,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.model.*
 import com.example.data.repository.GameRepository
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
+import kotlin.time.Duration.Companion.milliseconds
 
 enum class GameScreen {
     Home,
@@ -60,6 +62,8 @@ class GameViewModel(private val repository: GameRepository) : ViewModel() {
     // Dynamic banner celebratory and toast feedback states
     private val _toastMessage = MutableStateFlow<String?>(null)
     val toastMessage: StateFlow<String?> = _toastMessage.asStateFlow()
+
+    private var toastDismissJob: kotlinx.coroutines.Job? = null
 
     private val _celebrationMilestone = MutableStateFlow<String?>(null)
     val celebrationMilestone: StateFlow<String?> = _celebrationMilestone.asStateFlow()
@@ -147,8 +151,12 @@ class GameViewModel(private val repository: GameRepository) : ViewModel() {
     // Load spec of standard level
     fun loadLevel(levelId: Int) {
         val level = StaticLevelSource.levels.firstOrNull { it.id == levelId } ?: StaticLevelSource.levels.first()
+        
+        // Synchronously reset all transient gameplay state to avoid "stale" UI frames
+        _wheelLetters.value = level.letters.toList().shuffled()
         _activeLevel.value = level
-        _wheelLetters.value = level.letters.toList()
+        _solvedWords.value = emptySet()
+        _revealedCoords.value = emptySet()
         _currentSwipeText.value = ""
         _toastMessage.value = null
         _celebrationMilestone.value = null
@@ -171,9 +179,6 @@ class GameViewModel(private val repository: GameRepository) : ViewModel() {
                     }
                     .toSet()
                 _revealedCoords.value = coords
-            } else {
-                _solvedWords.value = emptySet()
-                _revealedCoords.value = emptySet()
             }
         }
     }
@@ -182,9 +187,13 @@ class GameViewModel(private val repository: GameRepository) : ViewModel() {
     private fun loadDailyChallenge() {
         val todayStr = getTodayDateStr()
         val level = DailyChallengeSource.getDailyLevel(todayStr)
+        
+        // Reset state synchronously
+        _dailyWheelLetters.value = level.letters.toList().shuffled()
         _dailyLevel.value = level
-        _dailyWheelLetters.value = level.letters.toList()
+        _dailySolvedWords.value = emptySet()
         _dailyRevealedCoords.value = emptySet()
+        _dailyCompleted.value = false
         _currentSwipeText.value = ""
         _toastMessage.value = null
         _celebrationMilestone.value = null
@@ -196,10 +205,22 @@ class GameViewModel(private val repository: GameRepository) : ViewModel() {
                     .filter { it.isNotBlank() }
                     .toSet()
                 _dailyCompleted.value = savedState.isCompleted
-            } else {
-                _dailySolvedWords.value = emptySet()
-                _dailyCompleted.value = false
             }
+        }
+    }
+
+    fun restartLevel(levelId: Int) {
+        viewModelScope.launch {
+            repository.clearLevelGameplayState(levelId)
+            loadLevel(levelId)
+        }
+    }
+
+    fun resetGame() {
+        viewModelScope.launch {
+            repository.resetAllProgress()
+            // After reset, navigate back home and everything will refresh via Flows
+            navigate(GameScreen.Home)
         }
     }
 
@@ -220,6 +241,9 @@ class GameViewModel(private val repository: GameRepository) : ViewModel() {
 
     // Handles terminal gesture validation
     fun validateSwipe(word: String) {
+        // Prevent processing swipes during transition/celebration
+        if (_celebrationMilestone.value != null) return
+
         val wordUpper = word.uppercase().trim()
         if (wordUpper.length < 2) {
             _currentSwipeText.value = ""
@@ -238,7 +262,7 @@ class GameViewModel(private val repository: GameRepository) : ViewModel() {
                 } else {
                     val updated = _dailySolvedWords.value + wordUpper
                     _dailySolvedWords.value = updated
-                    showToast("Nice Word! +10 Coins", isMilestone = true)
+                    showToast("Nice Word! +10 Coins")
                     viewModelScope.launch {
                         val isAllSolved = updated.size == level.gridWords.size
                         repository.saveDailyChallengeState(
@@ -275,7 +299,7 @@ class GameViewModel(private val repository: GameRepository) : ViewModel() {
                     // Show random fun educational milestones based on size
                     val celebratoryTitles = listOf("AWESOME!", "MARVELOUS!", "BRILLIANT!", "EXCELLENT!", "SUPERB!")
                     val bannerText = celebratoryTitles.random()
-                    showToast(bannerText, isMilestone = true)
+                    showToast(bannerText)
 
                     viewModelScope.launch {
                         repository.saveLevelGameplayState(
@@ -291,7 +315,7 @@ class GameViewModel(private val repository: GameRepository) : ViewModel() {
                             repository.completeLevel(level.id, starsEarned = 3, coinsEarned = 25)
                             
                             // Auto transition sequence to next level after brief celebratory delay
-                            kotlinx.coroutines.delay(2000)
+                            delay(2000L.milliseconds)
                             val nextLevelId = level.id + 1
                             if (nextLevelId <= StaticLevelSource.levels.size) {
                                 loadLevel(nextLevelId)
@@ -324,7 +348,7 @@ class GameViewModel(private val repository: GameRepository) : ViewModel() {
     private fun triggerSwipeError() {
         _swipeErrorTrigger.value = true
         viewModelScope.launch {
-            kotlinx.coroutines.delay(500)
+            delay(500L.milliseconds)
             _swipeErrorTrigger.value = false
         }
     }
@@ -444,16 +468,13 @@ class GameViewModel(private val repository: GameRepository) : ViewModel() {
         }
     }
 
-    fun showToast(msg: String, isMilestone: Boolean = false) {
-        if (isMilestone) {
-            _toastMessage.value = msg
-        } else {
-            _toastMessage.value = msg
-            viewModelScope.launch {
-                kotlinx.coroutines.delay(1800)
-                if (_toastMessage.value == msg) {
-                    _toastMessage.value = null
-                }
+    fun showToast(msg: String) {
+        toastDismissJob?.cancel()
+        _toastMessage.value = msg
+        toastDismissJob = viewModelScope.launch {
+            delay(3000L.milliseconds)
+            if (_toastMessage.value == msg) {
+                _toastMessage.value = null
             }
         }
     }
@@ -480,92 +501,106 @@ object DailyChallengeSource {
                 id = -99,
                 themeName = "$dayName Session",
                 colorStyle = "Red",
-                letters = "HISTORY",
-                gridWords = listOf("HISTORY", "TOYS", "HOST"),
+                letters = "HISTORYY",
+                gridWords = listOf("HISTORY", "STORY", "TOYS", "HOST", "HIS"),
                 placements = listOf(
-                    WordPlacement("HISTORY", 2, 0, true),
-                    WordPlacement("TOYS", 2, 3, false),
-                    WordPlacement("HOST", 2, 0, false)
+                    WordPlacement("HISTORY", 5, 0, true),
+                    WordPlacement("HIS", 5, 0, false),
+                    WordPlacement("STORY", 2, 2, false),
+                    WordPlacement("TOYS", 8, 2, true),
+                    WordPlacement("HOST", 4, 6, false)
                 ),
-                bonusWords = listOf("STORY", "SHIRT", "TOY", "SOIR", "TOSY", "HIS")
+                bonusWords = listOf("SHIRT", "TOY", "SOIR")
             )
             1 -> LevelSpec(
                 id = -98,
                 themeName = "$dayName Activity",
                 colorStyle = "Orange",
-                letters = "SCHOOL",
-                gridWords = listOf("SCHOOL", "COOL", "SOLO"),
+                letters = "SCHOOLL",
+                gridWords = listOf("SCHOOL", "COOL", "SOLO", "LOOS", "SOO"),
                 placements = listOf(
-                    WordPlacement("SCHOOL", 2, 0, true),
-                    WordPlacement("COOL", 1, 1, false),
-                    WordPlacement("SOLO", 2, 0, false)
+                    WordPlacement("SCHOOL", 5, 0, true),
+                    WordPlacement("SOLO", 5, 0, false),
+                    WordPlacement("COOL", 2, 1, false),
+                    WordPlacement("LOOS", 8, 3, false),
+                    WordPlacement("SOO", 4, 3, true)
                 ),
-                bonusWords = listOf("CHOS", "LOOS", "SOO", "SCHO", "COO", "SOL")
+                bonusWords = listOf("CHOS", "SCHO", "SOL")
             )
             2 -> LevelSpec(
                 id = -97,
                 themeName = "$dayName Research",
                 colorStyle = "Blue",
-                letters = "CHEMIST",
-                gridWords = listOf("CHEMIST", "CHIPS", "SEMI"),
+                letters = "CHEMISTT",
+                gridWords = listOf("CHEMIST", "CHIPS", "SEMI", "MIST", "HEM"),
                 placements = listOf(
-                    WordPlacement("CHEMIST", 2, 0, true),
-                    WordPlacement("CHIPS", 2, 0, false),
-                    WordPlacement("SEMI", 2, 3, false)
+                    WordPlacement("CHEMIST", 5, 0, true),
+                    WordPlacement("CHIPS", 5, 0, false),
+                    WordPlacement("HEM", 2, 1, false),
+                    WordPlacement("SEMI", 8, 3, false),
+                    WordPlacement("MIST", 4, 3, true)
                 ),
-                bonusWords = listOf("MIST", "HEM", "HIM", "SHE", "ITS", "MET", "THEM")
+                bonusWords = listOf("HIM", "SHE", "ITS", "MET")
             )
             3 -> LevelSpec(
                 id = -96,
                 themeName = "$dayName Hour",
                 colorStyle = "Red",
-                letters = "READING",
-                gridWords = listOf("READING", "DEAR", "RAIN"),
+                letters = "READINGG",
+                gridWords = listOf("READING", "DEAR", "RAIN", "RANG", "DING"),
                 placements = listOf(
-                    WordPlacement("READING", 2, 0, true),
+                    WordPlacement("READING", 5, 0, true),
+                    WordPlacement("RAIN", 5, 0, false),
                     WordPlacement("DEAR", 2, 3, false),
-                    WordPlacement("RAIN", 2, 0, false)
+                    WordPlacement("RANG", 8, 0, true),
+                    WordPlacement("DING", 4, 3, false)
                 ),
-                bonusWords = listOf("RANG", "DEAN", "DING", "RING", "EAR", "ERA", "ARE", "DEAR")
+                bonusWords = listOf("DEAN", "RING", "EAR", "ERA")
             )
             4 -> LevelSpec(
                 id = -95,
                 themeName = "$dayName Challenge",
                 colorStyle = "Orange",
-                letters = "ATHLETE",
-                gridWords = listOf("ATHLETE", "HALE", "LATE"),
+                letters = "ATHLETEE",
+                gridWords = listOf("ATHLETE", "HALE", "LATE", "TEAL", "ALE"),
                 placements = listOf(
-                    WordPlacement("ATHLETE", 2, 0, true),
+                    WordPlacement("ATHLETE", 5, 0, true),
+                    WordPlacement("ALE", 5, 0, false),
                     WordPlacement("HALE", 2, 2, false),
-                    WordPlacement("LATE", 2, 4, false)
+                    WordPlacement("LATE", 8, 4, false),
+                    WordPlacement("TEAL", 4, 4, true)
                 ),
-                bonusWords = listOf("TEAL", "HARE", "HAT", "THE", "EAT", "LET", "ALE")
+                bonusWords = listOf("HAT", "THE", "EAT", "LET")
             )
             5 -> LevelSpec(
                 id = -93,
                 themeName = "$dayName Recital",
                 colorStyle = "Blue",
-                letters = "SINGER",
-                gridWords = listOf("SINGER", "REIGN", "SING"),
+                letters = "SINGERR",
+                gridWords = listOf("SINGER", "REIGN", "SING", "RING", "RISE"),
                 placements = listOf(
-                    WordPlacement("SINGER", 2, 0, true),
-                    WordPlacement("REIGN", 2, 5, false),
-                    WordPlacement("SING", 2, 0, false)
+                    WordPlacement("SINGER", 5, 0, true),
+                    WordPlacement("SING", 5, 0, false),
+                    WordPlacement("REIGN", 2, 4, false),
+                    WordPlacement("RING", 8, 5, false),
+                    WordPlacement("RISE", 4, 0, true)
                 ),
-                bonusWords = listOf("RING", "RISE", "GIN", "IRE", "SER", "ENG")
+                bonusWords = listOf("GIN", "IRE", "SER", "ENG")
             )
             else -> LevelSpec(
                 id = -92,
                 themeName = "$dayName Stadium",
                 colorStyle = "Orange",
-                letters = "PASSAGE",
-                gridWords = listOf("PASSAGE", "PAGES", "PASS"),
+                letters = "PASSAGEE",
+                gridWords = listOf("PASSAGE", "PAGES", "PASS", "GAPS", "SAGE"),
                 placements = listOf(
-                    WordPlacement("PASSAGE", 2, 0, true),
-                    WordPlacement("PAGES", 2, 0, false),
-                    WordPlacement("PASS", 2, 4, false)
+                    WordPlacement("PASSAGE", 5, 0, true),
+                    WordPlacement("PASS", 5, 0, false),
+                    WordPlacement("PAGES", 2, 1, false),
+                    WordPlacement("SAGE", 8, 3, false),
+                    WordPlacement("GAPS", 4, 0, true)
                 ),
-                bonusWords = listOf("GAPS", "SAGE", "GAS", "ASP", "SEA", "SAG", "APE", "PASS")
+                bonusWords = listOf("GAS", "ASP", "SEA", "SAG")
             )
         }
     }

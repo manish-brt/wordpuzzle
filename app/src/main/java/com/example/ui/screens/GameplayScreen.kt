@@ -1,8 +1,6 @@
 package com.example.ui.screens
 
 import androidx.compose.animation.*
-import androidx.compose.animation.core.*
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -11,697 +9,24 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.VolumeOff
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.input.pointer.PointerEventPass
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-import com.example.data.model.LevelSpec
+import com.example.ui.components.*
+import com.example.ui.utils.SoundHapticHelper
 import com.example.ui.viewmodel.GameViewModel
-import kotlinx.coroutines.delay
-import kotlin.math.cos
-import kotlin.math.sin
-
-import coil.compose.AsyncImage
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.draw.blur
-
-@Composable
-fun SchoolBackground(theme: String, modifier: Modifier = Modifier) {
-    Box(
-        modifier = modifier.fillMaxSize()
-    ) {
-        AsyncImage(
-            model = "https://lh3.googleusercontent.com/aida-public/AB6AXuD262uVQL6SmFuBnicY-7BRCVTVPDI8aDpWvd3d1ghhPgTLInUheAjCHSY9a23a7BtFinkbD4E5Qtv0rbpsSp5OtkjCz4xLizw-_UK4fvqkYOQZf-w6y2dbFZwk8PbyQGYcIBcB49ByWGhBWTCjhfwtqoSq1wr4TBvQ9tXgaxUhyomP6HGpttErSSt6YXhAU6_P7coyxAoSBJPRgu1Y3kwVNkXo2yT8agZF9a1WvNQd0IWAw8ennHwiL_Yn4rJ1NUAkHDCb-umfMNw-",
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier
-                .fillMaxSize()
-                .blur(6.dp)
-        )
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            Color.Black.copy(alpha = 0.15f),
-                            Color.Black.copy(alpha = 0.35f)
-                        )
-                    )
-                )
-        )
-    }
-}
-
-// Custom interactive scale-down bounce click button modifier
-@Composable
-fun BounceButton(
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    content: @Composable () -> Unit
-) {
-    var isPressed by remember { mutableStateOf(false) }
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.85f else 1.0f,
-        animationSpec = spring(dampingRatio = 0.5f, stiffness = Spring.StiffnessMedium)
-    )
-
-    Box(
-        modifier = modifier
-            .graphicsLayer(scaleX = scale, scaleY = scale)
-            .pointerInput(Unit) {
-                awaitPointerEventScope {
-                    while (true) {
-                        val down = awaitFirstDown(requireUnconsumed = false)
-                        isPressed = true
-                        val up = waitForUpOrCancellation()
-                        isPressed = false
-                        if (up != null) {
-                            onClick()
-                        }
-                    }
-                }
-            },
-        contentAlignment = Alignment.Center
-    ) {
-        content()
-    }
-}
-
-private suspend fun androidx.compose.ui.input.pointer.AwaitPointerEventScope.awaitFirstDown(
-    requireUnconsumed: Boolean = true
-): androidx.compose.ui.input.pointer.PointerInputChange {
-    var event: androidx.compose.ui.input.pointer.PointerEvent
-    do {
-        event = awaitPointerEvent()
-    } while (!event.changes.any { if (requireUnconsumed) !it.isConsumed && it.pressed else it.pressed })
-    val change = event.changes.first { if (requireUnconsumed) !it.isConsumed && it.pressed else it.pressed }
-    return change
-}
-
-private suspend fun androidx.compose.ui.input.pointer.AwaitPointerEventScope.waitForUpOrCancellation(): androidx.compose.ui.input.pointer.PointerInputChange? {
-    while (true) {
-        val event = awaitPointerEvent()
-        val change = event.changes.firstOrNull() ?: return null
-        if (!change.pressed) {
-            return change
-        }
-        val isCanceled = event.changes.any { it.isConsumed }
-        if (isCanceled) {
-            return null
-        }
-    }
-}
-
-
-@Composable
-fun GlassCircleButton(
-    onClick: () -> Unit,
-    icon: ImageVector,
-    modifier: Modifier = Modifier,
-    badgeText: String? = null,
-    badgeColor: Color = Color(0xFFFF5722)
-) {
-    BounceButton(onClick = onClick, modifier = modifier) {
-        Box(
-            modifier = Modifier.size(60.dp),
-            contentAlignment = Alignment.BottomCenter
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(52.dp)
-                    .align(Alignment.TopCenter)
-                    .clip(CircleShape)
-                    .background(Color.White.copy(alpha = 0.15f))
-                    .border(1.5.dp, Color.White.copy(alpha = 0.3f), CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-            if (badgeText != null) {
-                Box(
-                    modifier = Modifier
-                        .height(18.dp)
-                        .clip(RoundedCornerShape(9.dp))
-                        .background(badgeColor)
-                        .border(1.dp, Color.White.copy(alpha = 0.4f), RoundedCornerShape(9.dp))
-                        .padding(horizontal = 6.dp)
-                        .align(Alignment.BottomCenter),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = badgeText,
-                        color = Color.White,
-                        fontSize = 9.sp,
-                        fontWeight = FontWeight.ExtraBold
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun PauseDialog(
-    soundEnabled: Boolean,
-    hapticEnabled: Boolean,
-    onSoundToggle: (Boolean) -> Unit,
-    onHapticToggle: (Boolean) -> Unit,
-    onResume: () -> Unit,
-    onRestart: () -> Unit,
-    onQuit: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.9f)),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(
-            modifier = Modifier
-                .width(310.dp)
-                .clip(RoundedCornerShape(32.dp))
-                .background(Color.White.copy(alpha = 0.12f))
-                .border(2.dp, Color.White.copy(alpha = 0.25f), RoundedCornerShape(32.dp))
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = "PAUSED",
-                color = Color.White,
-                fontSize = 28.sp,
-                fontWeight = FontWeight.Black,
-                letterSpacing = 1.sp
-            )
-
-            Spacer(modifier = Modifier.height(28.dp))
-
-            // RESUME BUTTON
-            TactileGradientButton(
-                onClick = onResume,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.PlayArrow,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(
-                    text = "RESUME",
-                    color = Color.White,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.ExtraBold
-                )
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // RESTART BUTTON
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp)
-                    .clip(RoundedCornerShape(26.dp))
-                    .border(2.dp, Color.White.copy(alpha = 0.8f), RoundedCornerShape(26.dp))
-                    .clickable { onRestart() },
-                contentAlignment = Alignment.Center
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Refresh,
-                        contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "RESTART",
-                        color = Color.White,
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // SOUND EFFECTS TOGGLE
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = if (soundEnabled) Icons.Default.VolumeUp else Icons.Default.VolumeOff,
-                        contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Text(
-                        text = "Sound Effects",
-                        color = Color.White,
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
-                Switch(
-                    checked = soundEnabled,
-                    onCheckedChange = onSoundToggle,
-                    colors = SwitchDefaults.colors(
-                        checkedThumbColor = Color.White,
-                        checkedTrackColor = Color(0xFFFF5722),
-                        uncheckedThumbColor = Color.LightGray,
-                        uncheckedTrackColor = Color.White.copy(alpha = 0.2f)
-                    )
-                )
-            }
-
-            // HAPTIC FEEDBACK TOGGLE
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.Vibration,
-                        contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Text(
-                        text = "Haptic Feedback",
-                        color = Color.White,
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
-                Switch(
-                    checked = hapticEnabled,
-                    onCheckedChange = onHapticToggle,
-                    colors = SwitchDefaults.colors(
-                        checkedThumbColor = Color.White,
-                        checkedTrackColor = Color(0xFFFF5722),
-                        uncheckedThumbColor = Color.LightGray,
-                        uncheckedTrackColor = Color.White.copy(alpha = 0.2f)
-                    )
-                )
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // QUIT LEVEL TEXT
-            Text(
-                text = "QUIT LEVEL",
-                color = Color.White.copy(alpha = 0.6f),
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier
-                    .clickable { onQuit() }
-                    .padding(8.dp)
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Decor / Zen Subtext
-            Text(
-                text = "Happy Playing",
-                color = Color.White.copy(alpha = 0.4f),
-                fontSize = 10.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 1.sp
-            )
-        }
-    }
-}
-
-@Composable
-fun GameLetterWheel(
-    letters: List<Char>,
-    colorStyle: String,
-    onSwipeUpdate: (String) -> Unit,
-    onSwipeComplete: (String) -> Unit,
-    soundEnabled: Boolean = true,
-    hapticEnabled: Boolean = true,
-    modifier: Modifier = Modifier
-) {
-    // Elegant Orange connected tracking color
-    val trackOrange = Color(0xFFFF5722)
-    val unselectedTextCharcoal = Color(0xFF271813)
-    val hapticFeedback = androidx.compose.ui.platform.LocalHapticFeedback.current
-
-    BoxWithConstraints(
-        modifier = modifier
-            .size(210.dp)
-            .background(Color.White.copy(alpha = 0.15f), shape = CircleShape)
-            .border(1.5.dp, Color.White.copy(alpha = 0.25f), CircleShape)
-            .testTag("circular_letter_wheel")
-    ) {
-        val widthPx = constraints.maxWidth.toFloat()
-        val heightPx = constraints.maxHeight.toFloat()
-        val center = Offset(widthPx / 2f, heightPx / 2f)
-        val radius = widthPx * 0.32f
-
-        val numLetters = letters.size
-        val density = LocalDensity.current
-        val collisionRadiusPx = with(density) { 24.dp.toPx() }
-
-        val positions = remember(letters, widthPx, heightPx) {
-            (0 until numLetters).map { i ->
-                val angle = -Math.PI / 2 + i * 2 * Math.PI / numLetters
-                Offset(
-                    center.x + radius * cos(angle).toFloat(),
-                    center.y + radius * sin(angle).toFloat()
-                )
-            }
-        }
-
-        val selectedIndices = remember { mutableStateListOf<Int>() }
-        var currentTouchPos by remember { mutableStateOf<Offset?>(null) }
-
-        // Find closest colliding node
-        fun findCollidingNode(touch: Offset): Int {
-            for (i in positions.indices) {
-                val node = positions[i]
-                val distSq = (touch.x - node.x) * (touch.x - node.x) + (touch.y - node.y) * (touch.y - node.y)
-                if (distSq < collisionRadiusPx * collisionRadiusPx) {
-                    return i
-                }
-            }
-            return -1
-        }
-
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .pointerInput(letters, positions) {
-                    awaitPointerEventScope {
-                        while (true) {
-                            val down = awaitFirstDown(requireUnconsumed = false)
-                            selectedIndices.clear()
-                            
-                            val hitIndex = findCollidingNode(down.position)
-                            if (hitIndex != -1) {
-                                selectedIndices.add(hitIndex)
-                                onSwipeUpdate(letters[hitIndex].toString())
-                                com.example.ui.utils.SoundHapticHelper.playConnectionSound(soundEnabled)
-                                com.example.ui.utils.SoundHapticHelper.triggerLightHaptic(hapticFeedback, hapticEnabled)
-                            }
-                            currentTouchPos = down.position
-
-                            var dragPointerId = down.id
-                            while (true) {
-                                val event = awaitPointerEvent(PointerEventPass.Main)
-                                val anyPressed = event.changes.any { it.pressed }
-                                if (!anyPressed) {
-                                    break
-                                }
-                                val change = event.changes.firstOrNull { it.id == dragPointerId }
-                                if (change != null) {
-                                    val currentPos = change.position
-                                    currentTouchPos = currentPos
-
-                                    val collidingIndex = findCollidingNode(currentPos)
-                                    if (collidingIndex != -1) {
-                                        if (!selectedIndices.contains(collidingIndex)) {
-                                            selectedIndices.add(collidingIndex)
-                                            val word = selectedIndices.map { letters[it] }.joinToString("")
-                                            onSwipeUpdate(word)
-                                            com.example.ui.utils.SoundHapticHelper.playConnectionSound(soundEnabled)
-                                            com.example.ui.utils.SoundHapticHelper.triggerLightHaptic(hapticFeedback, hapticEnabled)
-                                        } else if (selectedIndices.size >= 2 && selectedIndices[selectedIndices.size - 2] == collidingIndex) {
-                                            // Handle back-swipe retraction feedback
-                                            selectedIndices.removeAt(selectedIndices.size - 1)
-                                            val word = selectedIndices.map { letters[it] }.joinToString("")
-                                            onSwipeUpdate(word)
-                                            com.example.ui.utils.SoundHapticHelper.playConnectionSound(soundEnabled)
-                                            com.example.ui.utils.SoundHapticHelper.triggerLightHaptic(hapticFeedback, hapticEnabled)
-                                        }
-                                    }
-                                    change.consume()
-                                }
-                            }
-
-                            // Swipe completed
-                            if (selectedIndices.isNotEmpty()) {
-                                onSwipeComplete(selectedIndices.map { letters[it] }.joinToString(""))
-                            }
-                            selectedIndices.clear()
-                            currentTouchPos = null
-                        }
-                    }
-                }
-        ) {
-            // Draw real-time connections using Track Orange
-            Canvas(modifier = Modifier.fillMaxSize()) {
-                if (selectedIndices.size > 0) {
-                    // Draw established lines
-                    for (idx in 0 until selectedIndices.size - 1) {
-                        val start = positions[selectedIndices[idx]]
-                        val end = positions[selectedIndices[idx + 1]]
-                        drawLine(
-                            color = trackOrange,
-                            start = start,
-                            end = end,
-                            strokeWidth = 20f,
-                            cap = StrokeCap.Round
-                        )
-                    }
-                    // Draw line to current touch point
-                    val currentTouch = currentTouchPos
-                    if (currentTouch != null) {
-                        val start = positions[selectedIndices.last()]
-                        drawLine(
-                            color = trackOrange,
-                            start = start,
-                            end = currentTouch,
-                            strokeWidth = 20f,
-                            cap = StrokeCap.Round
-                        )
-                    }
-                }
-            }
-
-            // Draw interactive scale-up alphabets
-            for (i in 0 until numLetters) {
-                val isSelected = selectedIndices.contains(i)
-                val scale by animateFloatAsState(
-                    targetValue = if (isSelected) 1.25f else 1.0f,
-                    animationSpec = spring(dampingRatio = 0.6f, stiffness = Spring.StiffnessMedium)
-                )
-
-                val offset = positions[i]
-                val dpX = with(density) { offset.x.toDp() }
-                val dpY = with(density) { offset.y.toDp() }
-
-                Box(
-                    modifier = Modifier
-                        .offset(x = dpX - 23.dp, y = dpY - 23.dp)
-                        .size(46.dp)
-                        .graphicsLayer(scaleX = scale, scaleY = scale)
-                        .background(
-                            color = if (isSelected) trackOrange else Color.White,
-                            shape = CircleShape
-                        )
-                        .border(
-                            width = if (isSelected) 2.dp else 1.dp,
-                            color = if (isSelected) Color.White else Color(0xFFE2E8F0),
-                            shape = CircleShape
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = letters[i].toString(),
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Black,
-                        color = if (isSelected) Color.White else unselectedTextCharcoal
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun CrosswordGrid(
-    level: LevelSpec,
-    solvedWords: Set<String>,
-    revealedCoords: Set<Pair<Int, Int>>,
-    colorStyle: String,
-    modifier: Modifier = Modifier
-) {
-    val cellMap = level.computeGridCells()
-    if (cellMap.isEmpty()) return
-
-    val minRow = cellMap.keys.minOf { it.first }
-    val maxRow = cellMap.keys.maxOf { it.first }
-    val minCol = cellMap.keys.minOf { it.second }
-    val maxCol = cellMap.keys.maxOf { it.second }
-
-    val numRows = maxRow - minRow + 1
-    val numCols = maxCol - minCol + 1
-
-    // Adaptive constraints based on grid dimension
-    val maxDim = maxOf(numRows, numCols)
-    val cellSize = when {
-        maxDim <= 4 -> 42.dp
-        maxDim == 5 -> 38.dp
-        maxDim == 6 -> 34.dp
-        maxDim == 7 -> 30.dp
-        maxDim == 8 -> 26.dp
-        else -> 22.dp
-    }
-    val cellPadding = when {
-        maxDim <= 4 -> 3.dp
-        maxDim <= 6 -> 2.dp
-        else -> 1.5.dp
-    }
-    val cornerRadiusValue = when {
-        maxDim <= 4 -> 10.dp
-        maxDim <= 6 -> 8.dp
-        else -> 5.dp
-    }
-    val bottomShadowHeight = when {
-        maxDim <= 4 -> 3.dp
-        maxDim <= 6 -> 2.dp
-        else -> 1.5.dp
-    }
-    val textFontSize = when {
-        maxDim <= 4 -> 20.sp
-        maxDim == 5 -> 18.sp
-        maxDim == 6 -> 16.sp
-        maxDim == 7 -> 14.sp
-        maxDim == 8 -> 12.sp
-        else -> 10.sp
-    }
-
-    // Soft containment grid box: glassmorphic light overlay
-    Column(
-        modifier = modifier
-            .background(Color.White.copy(alpha = 0.12f), shape = RoundedCornerShape(20.dp))
-            .border(1.2.dp, Color.White.copy(alpha = 0.2f), RoundedCornerShape(20.dp))
-            .padding(10.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        for (r in 0 until numRows) {
-            Row(
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                for (c in 0 until numCols) {
-                    val globalRow = r + minRow
-                    val globalCol = c + minCol
-                    val coord = Pair(globalRow, globalCol)
-                    val letter = cellMap[coord]
-
-                    if (letter != null) {
-                        // Check if this letter should be revealed
-                        val isPartofSolvedWord = level.placements.any { p ->
-                            solvedWords.contains(p.word) && isCoordInPlacement(globalRow, globalCol, p)
-                        }
-                        val isRevealedByHint = revealedCoords.contains(coord)
-                        val isSolved = isPartofSolvedWord || isRevealedByHint
-
-                        val contentScale by animateFloatAsState(
-                            targetValue = if (isSolved) 1.0f else 0.9f,
-                            animationSpec = spring(dampingRatio = 0.7f, stiffness = Spring.StiffnessMedium)
-                        )
-
-                        val cellBg = if (isSolved) {
-                            Brush.verticalGradient(colors = listOf(Color(0xFFFF8C42), Color(0xFFFF5722)))
-                        } else {
-                            Brush.linearGradient(colors = listOf(Color.White.copy(alpha = 0.15f), Color.White.copy(alpha = 0.08f)))
-                        }
-
-                        Box(
-                            modifier = if (isSolved) {
-                                Modifier
-                                    .padding(cellPadding)
-                                    .size(cellSize)
-                                    .graphicsLayer(scaleX = contentScale, scaleY = contentScale)
-                                    .background(Color(0xFFB02F00), RoundedCornerShape(cornerRadiusValue))
-                                    .padding(bottom = bottomShadowHeight)
-                                    .background(cellBg, RoundedCornerShape(cornerRadiusValue))
-                                    .border(1.dp, Color(0xFFFF8C42), RoundedCornerShape(cornerRadiusValue))
-                            } else {
-                                Modifier
-                                    .padding(cellPadding)
-                                    .size(cellSize)
-                                    .graphicsLayer(scaleX = contentScale, scaleY = contentScale)
-                                    .background(cellBg, RoundedCornerShape(cornerRadiusValue))
-                                    .border(1.2.dp, Color.White.copy(alpha = 0.2f), RoundedCornerShape(cornerRadiusValue))
-                            }
-                            .testTag("grid_cell_${globalRow}_${globalCol}"),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            if (isSolved) {
-                                Text(
-                                    text = letter.toString(),
-                                    color = Color.White,
-                                    fontSize = textFontSize,
-                                    fontWeight = FontWeight.Black
-                                )
-                            }
-                        }
-                    } else {
-                        // Invisible grid spacing
-                        Box(modifier = Modifier.padding(cellPadding).size(cellSize))
-                    }
-                }
-            }
-        }
-    }
-}
-
-
-fun isCoordInPlacement(r: Int, c: Int, p: com.example.data.model.WordPlacement): Boolean {
-    for (i in p.word.indices) {
-        val currR = if (p.isHorizontal) p.startRow else p.startRow + i
-        val currC = if (p.isHorizontal) p.startCol + i else p.startCol
-        if (currR == r && currC == c) return true
-    }
-    return false
-}
 
 @Composable
 fun GameplayScreen(
@@ -713,8 +38,8 @@ fun GameplayScreen(
     val solvedWords by viewModel.solvedWords.collectAsState()
     val revealedCoords by viewModel.revealedCoords.collectAsState()
     val wheelLetters by viewModel.wheelLetters.collectAsState()
-    val currentSwipeText by viewModel.currentSwipeText.collectAsState()
     val swipeErrorTrigger by viewModel.swipeErrorTrigger.collectAsState()
+    val currentSwipeText by viewModel.currentSwipeText.collectAsState()
     val userStats by viewModel.userStats.collectAsState()
     val toastMessage by viewModel.toastMessage.collectAsState()
     val celebrationMilestone by viewModel.celebrationMilestone.collectAsState()
@@ -733,49 +58,49 @@ fun GameplayScreen(
     val activeSpec = level!!
     val colorStyle = activeSpec.colorStyle
 
-    val themeColor = when (colorStyle) {
-        "Red" -> Color(0xFFE53935)
-        "Blue" -> Color(0xFF1E88E5)
-        else -> Color(0xFFFB8C00)
+    val themeColor = remember(colorStyle) {
+        when (colorStyle) {
+            "Red" -> Color(0xFFE53935)
+            "Blue" -> Color(0xFF1E88E5)
+            else -> Color(0xFFFB8C00)
+        }
     }
 
     val soundEnabled = userStats.soundEnabled
     val hapticEnabled = userStats.hapticEnabled
-    val hapticFeedback = androidx.compose.ui.platform.LocalHapticFeedback.current
+    val hapticFeedback = LocalHapticFeedback.current
 
     LaunchedEffect(solvedWords.size) {
         if (solvedWords.isNotEmpty()) {
-            com.example.ui.utils.SoundHapticHelper.playCorrectWordSound(soundEnabled)
-            com.example.ui.utils.SoundHapticHelper.triggerMediumHaptic(hapticFeedback, hapticEnabled)
+            SoundHapticHelper.playCorrectWordSound(soundEnabled)
+            SoundHapticHelper.triggerMediumHaptic(hapticFeedback, hapticEnabled)
         }
     }
 
     LaunchedEffect(extraWordsFound.size) {
         if (extraWordsFound.isNotEmpty()) {
-            com.example.ui.utils.SoundHapticHelper.playBonusWordSound(soundEnabled)
-            com.example.ui.utils.SoundHapticHelper.triggerLightHaptic(hapticFeedback, hapticEnabled)
+            SoundHapticHelper.playBonusWordSound(soundEnabled)
+            SoundHapticHelper.triggerLightHaptic(hapticFeedback, hapticEnabled)
         }
     }
 
     LaunchedEffect(swipeErrorTrigger) {
         if (swipeErrorTrigger) {
-            com.example.ui.utils.SoundHapticHelper.playErrorSound(soundEnabled)
-            com.example.ui.utils.SoundHapticHelper.triggerErrorHaptic(hapticFeedback, hapticEnabled)
+            SoundHapticHelper.playErrorSound(soundEnabled)
+            SoundHapticHelper.triggerErrorHaptic(hapticFeedback, hapticEnabled)
         }
     }
 
     LaunchedEffect(celebrationMilestone) {
         if (celebrationMilestone != null) {
-            com.example.ui.utils.SoundHapticHelper.playCompleteSound(soundEnabled)
-            com.example.ui.utils.SoundHapticHelper.triggerMediumHaptic(hapticFeedback, hapticEnabled)
+            SoundHapticHelper.playCompleteSound(soundEnabled)
+            SoundHapticHelper.triggerMediumHaptic(hapticFeedback, hapticEnabled)
         }
     }
 
     Box(modifier = modifier.fillMaxSize()) {
-        // Full screen procedural background
-        SchoolBackground(theme = activeSpec.themeName)
+        SchoolBackground()
 
-        // Main game HUD
         Column(
             modifier = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -797,7 +122,6 @@ fun GameplayScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Back button to quit level
                     IconButton(
                         onClick = onBack,
                         modifier = Modifier
@@ -811,7 +135,6 @@ fun GameplayScreen(
                         )
                     }
 
-                    // Title Banner (Level & Theme)
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
                             text = "LEVEL ${activeSpec.id}",
@@ -832,7 +155,6 @@ fun GameplayScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        // Coins tracker (White with opacity, white text, monetization icon)
                         Row(
                             modifier = Modifier
                                 .height(38.dp)
@@ -857,7 +179,6 @@ fun GameplayScreen(
                             )
                         }
 
-                        // Menu burger button to pause
                         IconButton(
                             onClick = { showPauseMenu = true },
                             modifier = Modifier
@@ -873,7 +194,6 @@ fun GameplayScreen(
                     }
                 }
 
-                // Crossword puzzle grid list centering
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -890,7 +210,7 @@ fun GameplayScreen(
                 }
             }
 
-            // BOTTOM PANEL (Interaction Area): Glassmorphic panel with upper shadow elevation
+            // BOTTOM PANEL (Interaction Area)
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -911,71 +231,25 @@ fun GameplayScreen(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    // Middle swipe bubble row
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(44.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        if (currentSwipeText.isNotEmpty()) {
-                            val shakeOffset by animateDpAsState(
-                                targetValue = if (swipeErrorTrigger) 10.dp else 0.dp,
-                                animationSpec = keyframes {
-                                    durationMillis = 300
-                                    0.dp at 0
-                                    (-8).dp at 75
-                                    8.dp at 150
-                                    (-4).dp at 225
-                                    0.dp at 300
-                                }
-                            )
+                    SwipeFeedbackSection(
+                        currentSwipeText = currentSwipeText,
+                        swipeErrorTrigger = swipeErrorTrigger
+                    )
 
-                            Box(
-                                modifier = Modifier
-                                    .graphicsLayer(translationX = with(LocalDensity.current) { shakeOffset.toPx() })
-                                    .clip(RoundedCornerShape(22.dp))
-                                    .background(
-                                        if (swipeErrorTrigger) {
-                                            Brush.verticalGradient(colors = listOf(Color(0xFFD32F2F), Color(0xFFC62828)))
-                                        } else {
-                                            Brush.verticalGradient(colors = listOf(Color(0xFFFF8C42), Color(0xFFFF5722)))
-                                        }
-                                    )
-                                    .border(1.2.dp, Color.White.copy(alpha = 0.3f), RoundedCornerShape(22.dp))
-                                    .padding(horizontal = 24.dp, vertical = 6.dp)
-                                    .testTag("swiped_feedback_bubble")
-                            ) {
-                                Text(
-                                    text = currentSwipeText,
-                                    color = Color.White,
-                                    fontSize = 18.sp,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    textAlign = TextAlign.Center,
-                                    letterSpacing = 1.sp
-                                )
-                            }
-                        }
-                    }
-
-                    // Main interactive wheel flanked by controls
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceEvenly,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // LEFT SIDE BUTTONS: Shuffle & Extras Dialog
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            // Shuffle
                             GlassCircleButton(
                                 onClick = { viewModel.shuffleWheel() },
                                 icon = Icons.Default.Shuffle
                             )
 
-                            // Extra/Favorites Book
                             GlassCircleButton(
                                 onClick = { showExtraWordsDialog = true },
                                 icon = Icons.Default.Star,
@@ -983,7 +257,6 @@ fun GameplayScreen(
                             )
                         }
 
-                        // CENTRE: Interactive Letter Wheel (Lilac-purple colored!)
                         GameLetterWheel(
                             letters = wheelLetters,
                             colorStyle = colorStyle,
@@ -993,19 +266,16 @@ fun GameplayScreen(
                             hapticEnabled = hapticEnabled
                         )
 
-                        // RIGHT SIDE BUTTONS: Hint & Rocket Booster with price labels
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            // Standard Hint bulb
                             GlassCircleButton(
                                 onClick = { viewModel.purchaseSingleHint() },
                                 icon = Icons.Default.Lightbulb,
                                 badgeText = "25🪙"
                             )
 
-                            // Rocket booster
                             GlassCircleButton(
                                 onClick = { viewModel.purchaseRocketBooster() },
                                 icon = Icons.Default.RocketLaunch,
@@ -1014,7 +284,6 @@ fun GameplayScreen(
                         }
                     }
 
-                    // Bottom status indicator row: Rank and Daily Streak from Design HTML
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -1022,7 +291,6 @@ fun GameplayScreen(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // Left: Rank indicator Glass pill
                         Row(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(12.dp))
@@ -1047,7 +315,6 @@ fun GameplayScreen(
                             )
                         }
 
-                        // Right: Dynamic Streak card
                         val completedCount = userStats.completedChallengesCount
                         Row(
                             modifier = Modifier
@@ -1191,7 +458,7 @@ fun GameplayScreen(
             }
         }
 
-        // Pause Menu Dialog Overlay Overlay
+        // Pause Menu Dialog Overlay
         if (showPauseMenu) {
             PauseDialog(
                 soundEnabled = soundEnabled,
@@ -1200,7 +467,7 @@ fun GameplayScreen(
                 onHapticToggle = { viewModel.updateHapticEnabled(it) },
                 onResume = { showPauseMenu = false },
                 onRestart = {
-                    viewModel.loadLevel(activeSpec.id)
+                    viewModel.restartLevel(activeSpec.id)
                     showPauseMenu = false
                 },
                 onQuit = {
@@ -1249,7 +516,8 @@ fun GameplayScreen(
                                 textAlign = TextAlign.Center
                             )
                         } else {
-                            FlowRow(
+                            @OptIn(ExperimentalLayoutApi::class)
+                            (FlowRow(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.Center,
                                 maxItemsInEachRow = 3
@@ -1261,7 +529,7 @@ fun GameplayScreen(
                                         modifier = Modifier.padding(4.dp)
                                     )
                                 }
-                            }
+                            })
                         }
 
                         Spacer(modifier = Modifier.height(20.dp))
@@ -1278,18 +546,190 @@ fun GameplayScreen(
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun FlowRow(
-    modifier: Modifier = Modifier,
-    horizontalArrangement: Arrangement.Horizontal = Arrangement.Start,
-    maxItemsInEachRow: Int = Int.MAX_VALUE,
-    content: @Composable () -> Unit
+fun PauseDialog(
+    soundEnabled: Boolean,
+    hapticEnabled: Boolean,
+    onSoundToggle: (Boolean) -> Unit,
+    onHapticToggle: (Boolean) -> Unit,
+    onResume: () -> Unit,
+    onRestart: () -> Unit,
+    onQuit: () -> Unit,
 ) {
-    androidx.compose.foundation.layout.FlowRow(
-        modifier = modifier,
-        horizontalArrangement = horizontalArrangement,
-        maxItemsInEachRow = maxItemsInEachRow,
-        content = { content() }
-    )
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.9f)),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            modifier = Modifier
+                .width(310.dp)
+                .clip(RoundedCornerShape(32.dp))
+                .background(Color.White.copy(alpha = 0.12f))
+                .border(2.dp, Color.White.copy(alpha = 0.25f), RoundedCornerShape(32.dp))
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = "PAUSED",
+                color = Color.White,
+                fontSize = 28.sp,
+                fontWeight = FontWeight.Black,
+                letterSpacing = 1.sp
+            )
+
+            Spacer(modifier = Modifier.height(28.dp))
+
+            // RESUME BUTTON
+            TactileGradientButton(
+                onClick = onResume,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.PlayArrow,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = "RESUME",
+                    color = Color.White,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.ExtraBold
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // RESTART BUTTON
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp)
+                    .clip(RoundedCornerShape(26.dp))
+                    .border(2.dp, Color.White.copy(alpha = 0.8f), RoundedCornerShape(26.dp))
+                    .clickable { onRestart() },
+                contentAlignment = Alignment.Center
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Refresh,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "RESTART",
+                        color = Color.White,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // SOUND EFFECTS TOGGLE
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = if (soundEnabled) Icons.AutoMirrored.Filled.VolumeUp else Icons.AutoMirrored.Filled.VolumeOff,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        text = "Sound Effects",
+                        color = Color.White,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+                Switch(
+                    checked = soundEnabled,
+                    onCheckedChange = onSoundToggle,
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = Color.White,
+                        checkedTrackColor = Color(0xFFFF5722),
+                        uncheckedThumbColor = Color.LightGray,
+                        uncheckedTrackColor = Color.White.copy(alpha = 0.2f)
+                    )
+                )
+            }
+
+            // HAPTIC FEEDBACK TOGGLE
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.Vibration,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        text = "Haptic Feedback",
+                        color = Color.White,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+                Switch(
+                    checked = hapticEnabled,
+                    onCheckedChange = onHapticToggle,
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = Color.White,
+                        checkedTrackColor = Color(0xFFFF5722),
+                        uncheckedThumbColor = Color.LightGray,
+                        uncheckedTrackColor = Color.White.copy(alpha = 0.2f)
+                    )
+                )
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // QUIT LEVEL TEXT
+            Text(
+                text = "QUIT LEVEL",
+                color = Color.White.copy(alpha = 0.6f),
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier
+                    .clickable { onQuit() }
+                    .padding(8.dp)
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Decor / Zen Subtext
+            Text(
+                text = "Happy Playing",
+                color = Color.White.copy(alpha = 0.4f),
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 1.sp
+            )
+        }
+    }
 }

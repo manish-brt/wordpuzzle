@@ -22,6 +22,10 @@ class GameRepository(private val dao: UserProgressDao) {
         dao.insertGameplayState(state)
     }
 
+    suspend fun clearLevelGameplayState(levelId: Int) {
+        dao.clearLevelState(levelId)
+    }
+
     suspend fun completeLevel(levelId: Int, starsEarned: Int, coinsEarned: Int) {
         val currentStats = dao.getUserStatsDirect() ?: UserStats()
         val nextLevelId = if (levelId == currentStats.currentLevelId) {
@@ -81,6 +85,13 @@ class GameRepository(private val dao: UserProgressDao) {
 
     suspend fun getDailyChallengeStateDirect(dateStr: String): DailyChallengeState? =
         dao.getDailyChallengeStateDirect(dateStr)
+
+    suspend fun resetAllProgress() {
+        dao.clearUserStats()
+        dao.clearAllLevelGameplayState()
+        dao.clearAllDailyChallengeState()
+        dao.clearLeaderboard()
+    }
 
     suspend fun saveDailyChallengeState(dateStr: String, solvedWords: List<String>, isCompleted: Boolean, rewardedCoins: Boolean) {
         val state = DailyChallengeState(
